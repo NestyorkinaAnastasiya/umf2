@@ -1,0 +1,10 @@
+﻿  slae.cpp
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(76): warning C4101: sigma: неиспользованная локальная переменная
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(768): warning C4018: <: несоответствие типов со знаком и без знака
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(772): warning C4018: <: несоответствие типов со знаком и без знака
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(779): warning C4018: <: несоответствие типов со знаком и без знака
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(783): warning C4018: <: несоответствие типов со знаком и без знака
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(786): warning C4018: <: несоответствие типов со знаком и без знака
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(789): warning C4018: <: несоответствие типов со знаком и без знака
+  umf2.vcxproj -> C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Debug\umf2.exe
+  umf2.vcxproj -> C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Debug\umf2.pdb (Partial PDB)
