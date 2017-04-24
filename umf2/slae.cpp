@@ -73,7 +73,7 @@ namespace slae
 	void SLAE::CalculateLocalF(int elementNumber)
 	{
 		Element element = grid.elements[elementNumber];
-		double fi, ksi, etta, x_, y_, sigma,
+		double fi, ksi, etta, x_, y_,
 			x1 = grid.nodes[element.nodes[0]].x, x3 = grid.nodes[element.nodes[1]].x,
 			y1 = grid.nodes[element.nodes[0]].y, y3 = grid.nodes[element.nodes[2]].y,
 			hx = x3 - x1, hy = y3 - y1,
@@ -84,13 +84,15 @@ namespace slae
 			locF[i] = 0;
 			for (int k = 0; k < 25; k++)
 			{
+
 				ksi = 0.5 + 0.5 * gaussPoints[0][k]; etta = 0.5 + 0.5 * gaussPoints[1][k];
 				x_ = x1 + ksi*hx; y_ = y1 + etta*hy;
-				fi = tests.Fi(x_, y_);
+				fi = 0;
+				for (int l = 0; l < 9; l++)
+					fi += tests.Fi(u[l], x_, y_) * phi[l](ksi, etta);
 
-				//добавка к правой части от аппроксимации по времени
 				locF[i] += fi * gaussWeights[k] * phi[i](ksi, etta);
-					
+
 			}
 			locF[i] *= jacobian ;
 		}
@@ -847,7 +849,7 @@ namespace slae
 		grid.DoPartition();
 		//Размерность задачи соответствует общему числу базисных функций
 		n = (2 * grid.nx - 1)*(2 * grid.ny - 1);
-
+		 
 		F.resize(n);
 		u.resize(n);
 		r.resize(n);
@@ -856,20 +858,6 @@ namespace slae
 		//Генерация портрета матрицы и её инициализация
 		A.CreatePortret(n, grid);
 		globalM.CreatePortret(n, grid);
-		
-		/*n = 3;
-		F.resize(3);
-		u.resize(3);
-		r.resize(3);
-		z.resize(3);
-
-		A.Initialize(3, 3);
-		A.di[0] = A.di[1] = A.di[2] = 10;
-		A.ig = {0,0,1,3};
-		A.jg = { 0,0,1 };
-		A.ggl = { 1,1,1 };
-		A.ggu = { 1,1,1 };
-		F = {12,12,12};*/
 
 	}
 	
@@ -879,7 +867,7 @@ namespace slae
 		fopen_s(&fo, "result.txt", "w");
 
 
-		for (auto &i : u) i = 1;
+		//for (auto &i : u) i = 1;
 		for (t = 1; t < 16;)
 		{
 			ht = 0.1;
@@ -988,11 +976,13 @@ namespace slae
 			dis = sqrt(dis);
 		}
 
-		//	dis = Rel_Discrepancy();
+		dis = Rel_Discrepancy();
 		for (int i = 0; i < n; i++)
 			fprintf(fd, "%.14lf\n", u[i]);
+		fprintf(fd, "%f\t", t);
 		fprintf(fd, "%E\t", dis);
 		fprintf(fd, "%d\t", k);
+		fprintf(fd, "\n\n");
 	}
 
 	double SLAE::Rel_Discrepancy()
@@ -1047,10 +1037,9 @@ namespace slae
 			dis = (dis - a * a * pp) / rr;
 			dis = sqrt(dis);
 		}
-		dis = Rel_Discrepancy(); \
-			for (int i = 0; i < n; i++)
-
-				fprintf(Out, "%.14lf\n", u[i]);
+		dis = Rel_Discrepancy(); 
+		for (int i = 0; i < n; i++)
+			fprintf(Out, "%.14lf\n", u[i]);
 
 		fprintf(Out, "%e	", t);
 		fprintf(Out, "%e	", dis);
