@@ -1,9 +1,29 @@
-/*slae.cpp*/
+п»ї/*slae.cpp*/
 #include "slae.h"
 
 namespace slae
 {
-	//Сборка локальных матриц жёсткости
+	SLAE::SLAE()
+	{
+		//РџРѕСЃС‚СЂРѕРµРЅРёРµ СЃРµС‚РєРё
+		grid.DoPartition();
+		//Р Р°Р·РјРµСЂРЅРѕСЃС‚СЊ Р·Р°РґР°С‡Рё СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ РѕР±С‰РµРјСѓ С‡РёСЃР»Сѓ Р±Р°Р·РёСЃРЅС‹С… С„СѓРЅРєС†РёР№
+		n = (2 * grid.nx - 1)*(2 * grid.ny - 1);
+
+		F.resize(n);
+		u.resize(n);
+		u_.resize(n);
+		r.resize(n);
+		z.resize(n);
+		maxtime = 8;
+		w = 1;
+		//Р“РµРЅРµСЂР°С†РёСЏ РїРѕСЂС‚СЂРµС‚Р° РјР°С‚СЂРёС†С‹ Рё РµС‘ РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ
+		A.CreatePortret(n, grid);
+		globalM.CreatePortret(n, grid);
+
+	}
+
+	//РЎР±РѕСЂРєР° Р»РѕРєР°Р»СЊРЅС‹С… РјР°С‚СЂРёС† Р¶С‘СЃС‚РєРѕСЃС‚Рё
 	void SLAE::CalculateG(int elementNumber)
 	{
 		Element element = grid.elements[elementNumber];
@@ -31,13 +51,13 @@ namespace slae
 				G[i][j] = g1 * jacobian / hx2 + g2 * jacobian / hy2;
 			}
 		}
-		//матрица симметричная, заполняем нижний треугольник
+		//РјР°С‚СЂРёС†Р° СЃРёРјРјРµС‚СЂРёС‡РЅР°СЏ, Р·Р°РїРѕР»РЅСЏРµРј РЅРёР¶РЅРёР№ С‚СЂРµСѓРіРѕР»СЊРЅРёРє
 		for (int i = 1; i < 9; i++)
 			for (int j = 0; j < i; j++)
 				G[i][j] = G[j][i];
 	}
 
-	//Сборка локальных матриц масс
+	//РЎР±РѕСЂРєР° Р»РѕРєР°Р»СЊРЅС‹С… РјР°С‚СЂРёС† РјР°СЃСЃ
 	void SLAE::CalculateM(int elementNumber)
 	{
 		Element element = grid.elements[elementNumber];
@@ -63,42 +83,48 @@ namespace slae
 				M[i][j] = g * jacobian / ht;
 			}
 		}
-		//матрица симметричная, заполняем нижний треугольник
+		//РјР°С‚СЂРёС†Р° СЃРёРјРјРµС‚СЂРёС‡РЅР°СЏ, Р·Р°РїРѕР»РЅСЏРµРј РЅРёР¶РЅРёР№ С‚СЂРµСѓРіРѕР»СЊРЅРёРє
 		for (int i = 1; i < 9; i++)
 			for (int j = 0; j < i; j++)
 				M[i][j] = M[j][i];
 	}
 
-	//Сборка локальных правых частей
+	//РЎР±РѕСЂРєР° Р»РѕРєР°Р»СЊРЅС‹С… РїСЂР°РІС‹С… С‡Р°СЃС‚РµР№
 	void SLAE::CalculateLocalF(int elementNumber)
 	{
 		Element element = grid.elements[elementNumber];
-		double fi, ksi, etta, x_, y_,
+		double fi, ksi, etta, x_, y_, ui,
 			x1 = grid.nodes[element.nodes[0]].x, x3 = grid.nodes[element.nodes[1]].x,
 			y1 = grid.nodes[element.nodes[0]].y, y3 = grid.nodes[element.nodes[2]].y,
 			hx = x3 - x1, hy = y3 - y1,
 			jacobian = hx * hy / 4.0;
-
+		//РёРЅС‚РµРіСЂРёСЂРѕРІР°РЅРёРµ(Р“Р°СѓСЃСЃ 5)
 		for (int i = 0; i < 9; i++)
 		{	
 			locF[i] = 0;
-			for (int k = 0; k < 25; k++)
-			{
+			
+				for (int k = 0; k < 25; k++)
+				{
+					ksi = 0.5 + 0.5 * gaussPoints[0][k]; etta = 0.5 + 0.5 * gaussPoints[1][k];
+					x_ = x1 + ksi*hx; y_ = y1 + etta*hy;
 
-				ksi = 0.5 + 0.5 * gaussPoints[0][k]; etta = 0.5 + 0.5 * gaussPoints[1][k];
-				x_ = x1 + ksi*hx; y_ = y1 + etta*hy;
-				fi = 0;
-				for (int l = 0; l < 9; l++)
-					fi += tests.Fi(u[l], x_, y_) * phi[l](ksi, etta);
-
-				locF[i] += fi * gaussWeights[k] * phi[i](ksi, etta);
-
-			}
+					fi = 0;
+					//СЂР°Р·Р»РѕР¶РµРЅРёРµ РїРѕ Р±Р°Р·РёСЃСѓ РїСЂР°РІРѕР№ С‡Р°СЃС‚Рё
+					for (int l = 0; l < 9; l++)
+					{ 
+						ui = 0;
+						//СЂР°Р·Р»РѕР¶РµРЅРёРµ РїРѕ Р±Р°Р·РёСЃСѓ РїСЂРµРґС‹РґСѓС‰РµРіРѕ СЂРµС€РµРЅРёСЏ
+						for (int k = 0; k < 9; k++)
+							ui += u[grid.GetGlobalFuncNumber(elementNumber, k)] * phi[k](ksi, etta);
+						fi += tests.Fi(ui) * phi[l](ksi, etta);
+					}
+					locF[i] += fi * gaussWeights[k] * phi[i](ksi, etta);
+				}
 			locF[i] *= jacobian ;
 		}
 	}
 
-	//Добавка локального элемента в глобальный
+	//Р”РѕР±Р°РІРєР° Р»РѕРєР°Р»СЊРЅРѕРіРѕ СЌР»РµРјРµРЅС‚Р° РІ РіР»РѕР±Р°Р»СЊРЅС‹Р№
 	void SLAE::AddElementToGlobalMatrix(Matrix &B, int i, int j, double element)
 	{
 		int id;
@@ -127,12 +153,13 @@ namespace slae
 		}
 	}
 
-	//Сборка локальных матриц(векторов) и добавление в глобальные
+	//РЎР±РѕСЂРєР° Р»РѕРєР°Р»СЊРЅС‹С… РјР°С‚СЂРёС†(РІРµРєС‚РѕСЂРѕРІ) Рё РґРѕР±Р°РІР»РµРЅРёРµ РІ РіР»РѕР±Р°Р»СЊРЅС‹Рµ
 	void SLAE::CalculateLocals(int elementNumber)
 	{
 		Element element = grid.elements[elementNumber];
 		int ki, kj;
 
+		//РІС‹С‡РёСЃР»РµРЅРёРµ Р»РѕРєР°Р»СЊРЅС‹С… РјР°С‚СЂРёС†
 		CalculateG(elementNumber);
 		CalculateM(elementNumber);
 		CalculateLocalF(elementNumber);
@@ -143,21 +170,57 @@ namespace slae
 			for (int j = 0; j < 9; j++)
 			{
 				kj = element.dof[j];
+				//РґРѕР±Р°РІРєР° РІ РіР»РѕР±Р°Р»СЊРЅСѓСЋ РјР°С‚СЂРёС†Сѓ Рђ
 				AddElementToGlobalMatrix(A, ki, kj, G[i][j] + M[i][j]);
+				//РґРѕР±Р°РІРєР° РІ РіР»РѕР±Р°Р»СЊРЅСѓСЋ РјР°С‚СЂРёС†Сѓ РјР°СЃСЃ
 				AddElementToGlobalMatrix(globalM, ki, kj, M[i][j]);
 			}
+			//РґРѕР±Р°РІРєР° РІ РіР»РѕР±Р°Р»СЊРЅСѓСЋ РїСЂР°РІСѓСЋ С‡Р°СЃС‚СЊ
 			F[ki] += locF[i];
 		}
 	}
 
-	//Нахождение правой части для 1ого краевого условия
+	//Р“РµРЅРµСЂР°С†РёСЏ РЎР›РђРЈ
+	void SLAE::GenerateSLAE()
+	{
+		for (int i = 0; i < n; i++)
+			A.di[i] = F[i] = globalM.di[i] = 0;
+		for (int i = 0; i < A.ggl.size(); i++)
+			A.ggl[i] = A.ggu[i] = globalM.ggl[i] = globalM.ggu[i] = 0;
+
+		//Р’С‹СЃС‡РёС‚С‹РІР°РЅРёРµ Р»РѕРєР°Р»СЊРЅС‹С… РјР°С‚СЂРёС†(РІРµРєС‚РѕСЂРѕРІ) Рё РґРѕР±Р°РІР»РµРЅРёРµ РІ РіР»РѕР±Р°Р»СЊРЅС‹Рµ
+		for (int i = 0; i < grid.elements.size(); i++)
+			CalculateLocals(i);
+
+		vector<double> b;
+		b.resize(n);
+
+		//РґРѕР±Р°РІРєР° РѕС‚ РјР°С‚СЂРёС†С‹ РјР°СЃСЃ РїРѕ РІСЂРµРјРµРЅРё
+		globalM.MultiplyAx(u, b);
+		for (int i = 0; i < F.size(); i++)
+			F[i] += b[i];
+
+		//РЈС‡С‘С‚ РєСЂР°РµРІС‹С… СѓСЃР»РѕРІРёР№
+		for (int i = 0; i < grid.ku[0].size(); i++)
+			CalculateBoundaries1(i);
+
+		for (int i = 0; i < grid.ku[1].size(); i++)
+			CalculateBoundaries2(i);
+
+		for (int i = 0; i < grid.ku[2].size(); i++)
+			CalculateBoundaries3(i);
+
+		normF = Norm(F);
+	}
+
+	//РќР°С…РѕР¶РґРµРЅРёРµ РїСЂР°РІРѕР№ С‡Р°СЃС‚Рё РґР»СЏ 1РѕРіРѕ РєСЂР°РµРІРѕРіРѕ СѓСЃР»РѕРІРёСЏ
 	void SLAE::Calculate_g(int formNumber, int orientation, int elNumber)
 	{
 		Element element = grid.elements[elNumber];
 
 		switch (orientation)
 		{
-			//левое ребро
+			//Р»РµРІРѕРµ СЂРµР±СЂРѕ
 		case 0:
 		{
 			double x = grid.nodes[element.nodes[0]].x;
@@ -170,7 +233,7 @@ namespace slae
 			g[2] = tests.Ug(formNumber, x, y3, t);
 		}
 		break;
-		//правое ребро
+		//РїСЂР°РІРѕРµ СЂРµР±СЂРѕ
 		case 1:
 		{
 			double x = grid.nodes[element.nodes[1]].x;
@@ -183,7 +246,7 @@ namespace slae
 			g[2] = tests.Ug(formNumber, x, y3, t);
 		}
 		break;
-		//нижнее ребро
+		//РЅРёР¶РЅРµРµ СЂРµР±СЂРѕ
 		case 2:
 		{
 			double y = grid.nodes[element.nodes[0]].y;
@@ -195,7 +258,7 @@ namespace slae
 			g[2] = tests.Ug(formNumber, x3, y, t);
 		}
 		break;
-		//верхнее ребро
+		//РІРµСЂС…РЅРµРµ СЂРµР±СЂРѕ
 		case 3:
 		{
 			double y = grid.nodes[element.nodes[2]].y;
@@ -211,7 +274,7 @@ namespace slae
 		}
 	}
 
-	//Вычисление 1ого краевого условия для одного узла
+	//Р’С‹С‡РёСЃР»РµРЅРёРµ 1РѕРіРѕ РєСЂР°РµРІРѕРіРѕ СѓСЃР»РѕРІРёСЏ РґР»СЏ РѕРґРЅРѕРіРѕ СѓР·Р»Р°
 	void SLAE::CalculateBoundaries1ForNode(int node, double gi, double weight)
 	{
 		int id;
@@ -235,7 +298,7 @@ namespace slae
 			}
 	}
 
-	//Учёт первого краевого условия
+	//РЈС‡С‘С‚ РїРµСЂРІРѕРіРѕ РєСЂР°РµРІРѕРіРѕ СѓСЃР»РѕРІРёСЏ
 	void SLAE::CalculateBoundaries1(int number)
 	{
 		Element element = grid.elements[grid.ku[0][number].elem];
@@ -271,7 +334,7 @@ namespace slae
 		}
 	}
 
-	//Учёт второго краевого условия
+	//РЈС‡С‘С‚ РІС‚РѕСЂРѕРіРѕ РєСЂР°РµРІРѕРіРѕ СѓСЃР»РѕРІРёСЏ
 	void SLAE::CalculateBoundaries2(int number)
 	{
 		Element element = grid.elements[grid.ku[1][number].elem];
@@ -280,12 +343,12 @@ namespace slae
 		double y1 = grid.nodes[element.nodes[0]].y, y3 = grid.nodes[element.nodes[2]].y;
 		double hx = x3 - x1;
 		double hy = y3 - y1;
-		//Левое ребро
+		//Р›РµРІРѕРµ СЂРµР±СЂРѕ
 		if (grid.ku[1][number].edges[0] == 1)
 		{
-			//Глобальные номера базисных функций
+			//Р“Р»РѕР±Р°Р»СЊРЅС‹Рµ РЅРѕРјРµСЂР° Р±Р°Р·РёСЃРЅС‹С… С„СѓРЅРєС†РёР№
 			array<int, 3> indexes = { element.dof[0], element.dof[3], element.dof[6] };
-			//Локальные номера
+			//Р›РѕРєР°Р»СЊРЅС‹Рµ РЅРѕРјРµСЂР°
 			array<int, 3> id = { 0, 3, 6 };
 
 			jacobian = hy / 2;
@@ -300,11 +363,11 @@ namespace slae
 					double tetta_ = tests.Tetta(grid.ku[1][number].formNumber[0], grid.nodes[element.dof[id[i]]].x, y_);
 					g += gaussWeights1[k] * phi[id[i]](0, etta) * tetta_;
 				}
-				//Добавляем к глобальному вектору правой части
+				//Р”РѕР±Р°РІР»СЏРµРј Рє РіР»РѕР±Р°Р»СЊРЅРѕРјСѓ РІРµРєС‚РѕСЂСѓ РїСЂР°РІРѕР№ С‡Р°СЃС‚Рё
 				F[indexes[i]] += g * jacobian;
 			}
 		}
-		//Правое ребро
+		//РџСЂР°РІРѕРµ СЂРµР±СЂРѕ
 		if (grid.ku[1][number].edges[1] == 1)
 		{
 			int indexes[3] = { element.dof[2], element.dof[5], element.dof[8] };
@@ -325,7 +388,7 @@ namespace slae
 				F[indexes[i]] += g * jacobian;
 			}
 		}
-		//Нижнее ребро
+		//РќРёР¶РЅРµРµ СЂРµР±СЂРѕ
 		if (grid.ku[1][number].edges[2] == 1)
 		{
 			int indexes[3] = { element.dof[0], element.dof[1], element.dof[2] };
@@ -346,7 +409,7 @@ namespace slae
 				F[indexes[i]] += g * jacobian;
 			}
 		}
-		//Верхнее ребро
+		//Р’РµСЂС…РЅРµРµ СЂРµР±СЂРѕ
 		if (grid.ku[1][number].edges[3] == 1)
 		{
 			int indexes[3] = { element.dof[6], element.dof[7], element.dof[8] };
@@ -369,7 +432,7 @@ namespace slae
 		}
 	}
 
-	//Учёт третьего краевого условия
+	//РЈС‡С‘С‚ С‚СЂРµС‚СЊРµРіРѕ РєСЂР°РµРІРѕРіРѕ СѓСЃР»РѕРІРёСЏ
 	void SLAE::CalculateBoundaries3(int number)
 	{
 		Element element = grid.elements[grid.ku[2][number].elem];
@@ -379,7 +442,7 @@ namespace slae
 		double hx = x3 - x1;
 		double hy = y3 - y1;
 
-		//Левое ребро
+		//Р›РµРІРѕРµ СЂРµР±СЂРѕ
 		if (grid.ku[2][number].edges[0] == 1)
 		{
 			int indexes[3] = { element.dof[0], element.dof[3], element.dof[6] };
@@ -417,7 +480,7 @@ namespace slae
 				}
 			}
 		}
-		//Правое ребро
+		//РџСЂР°РІРѕРµ СЂРµР±СЂРѕ
 		if (grid.ku[2][number].edges[1] == 1)
 		{
 
@@ -455,7 +518,7 @@ namespace slae
 				}
 			}
 		}
-		//Нижнее ребро
+		//РќРёР¶РЅРµРµ СЂРµР±СЂРѕ
 		if (grid.ku[2][number].edges[2] == 1)
 		{
 			int indexes[3] = { element.dof[0], element.dof[1], element.dof[2] };
@@ -493,7 +556,7 @@ namespace slae
 				}
 			}
 		}
-		//Верхнее ребро
+		//Р’РµСЂС…РЅРµРµ СЂРµР±СЂРѕ
 		if (grid.ku[2][number].edges[3] == 1)
 		{
 			int indexes[3] = { element.dof[6], element.dof[7], element.dof[8] };
@@ -533,7 +596,7 @@ namespace slae
 		}
 	}
 
-	//Вычисление нормы вектора
+	//Р’С‹С‡РёСЃР»РµРЅРёРµ РЅРѕСЂРјС‹ РІРµРєС‚РѕСЂР°
 	double SLAE::Norm(const vector<double> &x)
 	{
 		double norm = 0;
@@ -545,7 +608,7 @@ namespace slae
 		return sqrt(norm);
 	}
 
-	//Скалярное произведение векторов
+	//РЎРєР°Р»СЏСЂРЅРѕРµ РїСЂРѕРёР·РІРµРґРµРЅРёРµ РІРµРєС‚РѕСЂРѕРІ
 	double SLAE::Scalar(const vector<double> &x, const vector<double> &y)
 	{
 		double sum = 0;
@@ -556,332 +619,53 @@ namespace slae
 		return sum;
 	}
 
-	/*////LU-факторизация
-	//void SLAE::LU()
-	//{
-	//	int i, i0, j0, iend, num, ki, kj, jend;
-	//	double suml, sumu, sumdg;
-
-	//	L.resize(A.ggl.size());
-	//	L = A.ggl;
-	//	U.resize(A.ggu.size());
-	//	U = A.ggu;
-	//	D.resize(A.di.size());
-	//	D = A.di;
-
-	//	for (i = 0; i < n; i++)
-	//	{
-	//		i0 = A.ig[i];
-	//		iend = A.ig[i + 1];
-
-	//		for (num = i0, sumdg = 0; num < iend; num++)
-	//		{
-
-	//			j0 = A.ig[A.jg[num]];
-	//			jend = A.ig[A.jg[num] + 1];
-	//			ki = i0;
-	//			kj = j0;
-	//			//для num учитываются все предыдущие элементы
-	//			for (suml = 0, sumu = 0, ki = i0; ki < num; ki++)
-	//			{
-	//				for (int m = kj; m < jend; m++)
-	//					//ищем соответствующие ненулевые элементы для умножения
-	//					if (A.jg[ki] == A.jg[m])
-	//					{
-	//						suml += L[ki] * U[m];
-	//						sumu += L[m] * U[ki];
-	//					}
-	//			}
-
-	//			L[num] -= suml;
-	//			U[num] = (U[num] - sumu) / D[A.jg[num]];
-	//			//умножаются симметричные элементы
-	//			sumdg += L[num] * U[num];
-	//		}
-
-	//		D[i] -= sumdg;
-	//	}
-	//}*/
-
+	//LU-С„Р°РєС‚РѕСЂРёР·Р°С†РёСЏ
 	void SLAE::LU()
 	{
-		int i, i0, j0, iend, num, ki, kj;
+		int i, i0, j0, iend, num, ki, kj, jend;
 		double suml, sumu, sumdg;
+
 		L.resize(A.ggl.size());
+		L = A.ggl;
 		U.resize(A.ggu.size());
+		U = A.ggu;
 		D.resize(A.di.size());
-		for (i = 0; i < A.n; i++)
-		{
-			U[i] = A.ggu[i];
-			L[i] = A.ggl[i];
-			if (i < n)
-				D[i] = A.di[i];
-		}
+		D = A.di;
+
 		for (i = 0; i < n; i++)
 		{
 			i0 = A.ig[i];
 			iend = A.ig[i + 1];
+
 			for (num = i0, sumdg = 0; num < iend; num++)
 			{
-				j0 = A.ig[A.jg[num]]; //в зависимости от номера фиксируем столбец,какой столбец l,такого столбца  ищем начальный эл у u 
-				int jend = A.ig[A.jg[num] + 1];
-				ki = i0; kj = j0;
-				for (suml = 0, sumu = 0, ki = i0; ki < num; ki++) //для num учитываются все предыдущие элементы
+				j0 = A.ig[A.jg[num]];
+				jend = A.ig[A.jg[num] + 1];
+				ki = i0;
+				kj = j0;
+				//РґР»СЏ num СѓС‡РёС‚С‹РІР°СЋС‚СЃСЏ РІСЃРµ РїСЂРµРґС‹РґСѓС‰РёРµ СЌР»РµРјРµРЅС‚С‹
+				for (suml = 0, sumu = 0, ki = i0; ki < num; ki++)
+				{
 					for (int m = kj; m < jend; m++)
-						if (A.jg[ki] == A.jg[m]) //ищем соответствующие ненулевые элементы для умножения
+						//РёС‰РµРј СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёРµ РЅРµРЅСѓР»РµРІС‹Рµ СЌР»РµРјРµРЅС‚С‹ РґР»СЏ СѓРјРЅРѕР¶РµРЅРёСЏ
+						if (A.jg[ki] == A.jg[m])
 						{
 							suml += L[ki] * U[m];
-							sumu += L[m] * U[ki];//для симметричного элемента из U
+							sumu += L[m] * U[ki];
 						}
+				}
 				L[num] -= suml;
 				U[num] = (U[num] - sumu) / D[A.jg[num]];
-				sumdg += L[num] * U[num];//умножаются симметричные элементы	
+				//СѓРјРЅРѕР¶Р°СЋС‚СЃСЏ СЃРёРјРјРµС‚СЂРёС‡РЅС‹Рµ СЌР»РµРјРµРЅС‚С‹
+				sumdg += L[num] * U[num];
 			}
 			D[i] -= sumdg;
 		}
 	}
-
-	void SLAE::MultiplyUx(const vector<double> a, vector <double> &result)
-	{
-		int i, j, l, ik, iend, k;
-		for (i = 0; i < n; i++)
-		{
-			//начало i-ой строки(столбца)
-			l = A.ig[i];
-			//начало (i+1)-ой строки(столбца)
-			iend = A.ig[i + 1];
-			//количество элементов в i строке(столбце)
-			ik = iend - l;
-
-			result[i] = A.di[i] * a[i];
-
-			//проходим по всем элементам i строки (столбца)
-			for (k = 0; k < ik; k++, l++)
-			{
-				j = A.jg[l];
-				result[j] += U[l] * a[i];
-			}
-		}
-	}
-
-	void SLAE::LFx(vector<double> b, vector <double> &result)
-	{
-		int i, k;
-		//адрес начала строки
-		int i0;
-		//адрес конца строки
-		int iend;
-		double sum;
-		for (i = 0; i < n; i++)
-		{
-			i0 = A.ig[i];
-			iend = A.ig[i + 1];
-
-			result[i] = b[i];
-
-			for (k = i0, sum = 0; k < iend; k++)
-				result[i] -= result[A.jg[k]] * L[k];
-
-			result[i] /= D[i];
-		}
-	}
-
-	void SLAE::LTFx(vector<double> b, vector <double> &result)
-	{
-		int i, k;
-		int i0;
-		int iend;
-
-		for (i = 0; i < n; i++)
-			result[i] = b[i];
-
-		for (i = n - 1; i >= 0; i--)
-		{
-			i0 = A.ig[i];
-			iend = A.ig[i + 1];
-
-			result[i] /= D[i];
-
-			for (k = iend - 1; k >= i0; k--)
-				result[A.jg[k]] -= result[i] * L[k];
-		}
-	}
-
-	void SLAE::UFx(vector<double> b, vector <double> &result)
-	{
-		int i, k;
-		int i0;
-		int iend;
-
-		for (i = 0; i < n; i++)
-			result[i] = b[i];
-
-		for (i = n - 1; i >= 0; i--)
-		{
-			i0 = A.ig[i];
-			iend = A.ig[i + 1];
-
-			for (k = iend - 1; k >= i0; k--)
-				result[A.jg[k]] -= result[i] * U[k];
-		}
-	}
-
-	void SLAE::UTFx(vector<double> b, vector <double> &result)
-	{
-		int i, k;
-		int i0;
-		int iend;
-		for (i = 0; i < n; i++)
-		{
-			i0 = A.ig[i];
-			iend = A.ig[i + 1];
-
-			result[i] = b[i];
-
-			for (k = i0; k < iend; k++)
-				result[i] -= result[A.jg[k]] * U[k];
-		}
-	}
-
-	double SLAE::IterMSG(const vector<double> &Az)
-	{
-		double ak, bk, scr;
-
-		scr = Scalar(r, r);
-		ak = scr / Scalar(Az, z);
-
-		for (int i = 0; i < n; i++)
-		{
-			r[i] -= ak*Az[i];
-			u[i] += ak*z[i];
-		}
-		bk = Scalar(r, r) / scr;
-
-		for (int i = 0; i < n; i++)
-			z[i] = r[i] + bk*z[i];
-
-		return Norm(r) / normF;
-	}
-
-	void SLAE::GenerateSLAE()
-	{
-		for (int i = 0; i < n; i++)
-			A.di[i] = F[i] = globalM.di[i] = 0;
-		for (int i = 0; i < A.ggl.size(); i++)
-			A.ggl[i] = A.ggu[i] = globalM.ggl[i] = globalM.ggu[i] = 0;
-
-		//Высчитывание локальных матриц(векторов) и добавление в глобальные
-		for (int i = 0; i < grid.elements.size(); i++)
-			CalculateLocals(i);
-
-		vector<double> b;
-		b.resize(n);
-
-		globalM.MultiplyAx(u, b);
-		for (int i = 0; i < F.size(); i++)
-			F[i] += b[i];
-
-		//Учёт краевых условий
-		for (int i = 0; i < grid.ku[0].size(); i++)
-			CalculateBoundaries1(i);
-
-		for (int i = 0; i < grid.ku[1].size(); i++)
-			CalculateBoundaries2(i);
-
-		for (int i = 0; i < grid.ku[2].size(); i++)
-			CalculateBoundaries3(i);
-
-		normF = Norm(F);
-	}
-
-	//Решатель МСГ с LU-факторизацией
-	void SLAE::LU_MSG(FILE *fo)
-	{
-		int iter;
-		double res;
-		
-		vector <double> Az;
-		Az.resize(n);
-
-		LU();
-
-		A.MultiplyAx(u, r);
-		LFx(r, r);
-		LTFx(r, r);
-		A.MultiplyATx(r, r);
-		UTFx(r, r);
-
-		LFx(F, z);
-		LTFx(z, z);
-		A.MultiplyATx(z, z);
-		UTFx(z, z);
-
-		normF = Norm(z);
-		for (int i = 0; i < n; i++)
-			r[i] = z[i] - r[i];
-
-		z = r;
-		MultiplyUx(u, u);
-
-		res = Norm(r) / normF;
-		for (iter = 0; res >= eps && iter < maxiter; iter++)
-		{
-			UFx(z, Az);
-			A.MultiplyAx(Az, Az);
-			LFx(Az, Az);
-			LTFx(Az, Az);
-			A.MultiplyATx(Az, Az);
-			UTFx(Az, Az);
-
-			res = IterMSG(Az);
-		}
-		UFx(u, u);
-
-		for (int i = 0; i < n; i++)
-			fprintf(fo, "%.14lf\n", u[i]);
-		fprintf(fo, "%E\t", res);
-		fprintf(fo, "%d\n\n", iter);
-	}
-
-	SLAE::SLAE()
-	{
-		//Построение сетки
-		grid.DoPartition();
-		//Размерность задачи соответствует общему числу базисных функций
-		n = (2 * grid.nx - 1)*(2 * grid.ny - 1);
-		 
-		F.resize(n);
-		u.resize(n);
-		r.resize(n);
-		z.resize(n);
-
-		//Генерация портрета матрицы и её инициализация
-		A.CreatePortret(n, grid);
-		globalM.CreatePortret(n, grid);
-
-	}
 	
-	void SLAE::TSolve()
-	{
-		FILE *fo;
-		fopen_s(&fo, "result.txt", "w");
-
-
-		//for (auto &i : u) i = 1;
-		for (t = 1; t < 16;)
-		{
-			ht = 0.1;
-			GenerateSLAE();
-			LULOS(fo);
-			t += ht;
-		}
-
-		fclose(fo);
-	}
-
 	void SLAE::LYF(const vector <double> &C, vector <double> &yl)
 	{
-		int i, i0, iend; //i0-адрес начала строки, iend-адрес конца строки
+		int i, i0, iend; //i0-Р°РґСЂРµСЃ РЅР°С‡Р°Р»Р° СЃС‚СЂРѕРєРё, iend-Р°РґСЂРµСЃ РєРѕРЅС†Р° СЃС‚СЂРѕРєРё
 		double sum;
 		for (i = 0; i < n; i++)
 		{
@@ -902,27 +686,36 @@ namespace slae
 		for (i = 0; i < n; i++)
 			yu[i] = 0.0;
 
-		for (i = n - 1; i >= 0; i--)//проход по столбцам с конца
+		for (i = n - 1; i >= 0; i--)//РїСЂРѕС…РѕРґ РїРѕ СЃС‚РѕР»Р±С†Р°Рј СЃ РєРѕРЅС†Р°
 		{
 			yu[i] += C[i];
 
 			i0 = A.ig[i]; iend = A.ig[i + 1]; iend--;
 
-			for (; iend >= i0; iend--)//идём по столбцу с конца
+			for (; iend >= i0; iend--)//РёРґС‘Рј РїРѕ СЃС‚РѕР»Р±С†Сѓ СЃ РєРѕРЅС†Р°
 				yu[A.jg[iend]] -= yu[i] * U[iend];
 		}
 	}
 
-	void SLAE::LULOS(FILE *fd)
+	double SLAE::Rel_Discrepancy()
+	{
+		double dis1, dis2;
+		dis1 = Scalar(r, r);
+		dis2 = Scalar(F, F);
+		double dis = dis1 / dis2;
+		return sqrt(dis);
+	}
+
+	void SLAE::LULOS()
 	{
 		double a, b, pp, dis, rr;
 		int i,k;
 		vector <double> Ax(n), C(n), p(n);
 
 		LU();
-
-		A.MultiplyAx(u, Ax);//Ax0
-						//f-Ax0
+		//Ax0
+		A.MultiplyAx(u, Ax);
+		//f-Ax0
 		for (i = 0; i < n; i++)
 			r[i] = F[i] - Ax[i];
 
@@ -943,7 +736,7 @@ namespace slae
 
 		for (k = 1; dis > eps && k <= maxiter; k++)
 		{
-			//Аk
+			//Рђk
 			pp = Scalar(p, p);
 			a = Scalar(p, r) / pp;
 
@@ -971,80 +764,88 @@ namespace slae
 				z[i] = C[i] + b * z[i];
 				p[i] = Ax[i] + b * p[i];
 			}
-
 			dis = Scalar(r, r) / rr;
 			dis = sqrt(dis);
 		}
 
 		dis = Rel_Discrepancy();
-		for (int i = 0; i < n; i++)
-			fprintf(fd, "%.14lf\n", u[i]);
-		fprintf(fd, "%f\t", t);
-		fprintf(fd, "%E\t", dis);
-		fprintf(fd, "%d\t", k);
-		fprintf(fd, "\n\n");
 	}
 
-	double SLAE::Rel_Discrepancy()
+	double SLAE::StopIteration()
 	{
-		double dis1, dis2;
-		dis1 = Scalar(r, r);
-		dis2 = Scalar(F, F);
-		double dis = dis1 / dis2;
-		return sqrt(dis);
+		vector <double> b(n), z(n);
+		//РіРµРЅРµСЂРёСЂСѓРµРј РЎР›РђРЈ СЃ С‚РµРєСѓС‰РёРј СЂРµС€РµРЅРёРµРј
+		GenerateSLAE();
+		//СѓРјРЅРѕР¶Р°РµРј РјР°С‚СЂРёС†Сѓ РЅР° С‚РµРєСѓС‰РµРµ СЂРµС€РµРЅРёРµ
+		A.MultiplyAx(u, z);
+		//Рё РЅР°С…РѕРґРёРј Р°Р±СЃРѕР»СЋС‚РЅСѓСЋ РЅРµРІСЏР·РєСѓ
+		for (int i = 0; i < n; i++)
+			b[i] = z[i] - F[i];
+
+		return Norm(b) / Norm(F);
 	}
-
-	void SLAE::LOS(FILE *Out)
+	
+	void SLAE::TSolve()
 	{
-		int i;
-		double a, b, dis,pp;
-		vector <double> Ax, p(n);
-		Ax.resize(n);
+		FILE *fo;
+		fopen_s(&fo, "result.txt", "w");
+		int k;
+		double exit_condition;
+		t = 1;
 
-	//	globalM.MultiplyAx(u, Ax);
-		A.MultiplyAx(u, Ax);
-		for (int i = 0; i < n; i++)
-			Ax[i] = F[i] - Ax[i];
+		vector <double> b(n), z(n);
+		u = { 0,1,8,0,1,8,0,1,8 };
 
-		A.MultiplyAx(u, Ax);
-		for (i = 0; i < n; i++)
+		//for (auto &i : u) i = 1;
+		//С†РёРєР» РїРѕ РІСЂРµРјРµРЅРё
+		while (t < maxtime)
 		{
-			r[i] = F[i] - Ax[i];
-			z[i] = r[i];
-		}
-		A.MultiplyAx(z, p);
-		double rr = Scalar(r, r);
-		dis = Scalar(r, r) / rr;
-		dis = sqrt(dis);
-		int k = 0;
-		for (k = 1; dis > eps && k <= maxiter; k++)
-		{
-			dis = Scalar(r, r);
-			pp = Scalar(p, p);
-			a = Scalar(p, r) / pp;
-			for (i = 0; i < n; i++)
+			printf("Calculating......([t] = %f)\n", t);
+			//С†РёРєР» РїРѕ РЅРµР»РёРЅРµР№РЅРѕСЃС‚Рё
+			for (k = 1; k < maxiter; k++)
 			{
-				u[i] = u[i] + a*z[i];
-				r[i] = r[i] - a*p[i];
+				//СЃРѕС…СЂР°РЅСЏРµРј РїСЂРµРґС‹РґСѓС‰РµРµ СЂРµС€РµРЅРёРµ
+				u_ = u;
+				//РЅР°С…РѕРґРёРј РЅРѕРІРѕРµ СЂРµС€РµРЅРёРµ
+				GenerateSLAE();
+				//СѓРјРЅРѕР¶Р°РµРј РјР°С‚СЂРёС†Сѓ РЅР° С‚РµРєСѓС‰РµРµ СЂРµС€РµРЅРёРµ
+				A.MultiplyAx(u, z);
+				//Рё РЅР°С…РѕРґРёРј Р°Р±СЃРѕР»СЋС‚РЅСѓСЋ РЅРµРІСЏР·РєСѓ
+				for (int i = 0; i < n; i++)
+					b[i] = z[i] - F[i];
+				LULOS();
+				//РїСЂРѕРІРµСЂСЏРµРј СѓСЃР»РѕРІРёРµ РѕСЃС‚Р°РЅРѕРІР° 
+				//+ РіРµРЅРµСЂР°С†РёСЏ РЎР›РђРЈ СЃ С‚РµРєСѓС‰РёРј СЂРµС€РµРЅРёРµРј
+				exit_condition = StopIteration();
+				//РµСЃР»Рё РѕРЅРѕ РЅРµ РІС‹РїРѕР»РЅРµРЅРѕ, С‚Рѕ, РёСЃРїРѕР»СЊР·СѓСЏ РїР°СЂР°РјРµС‚СЂ
+				//СЂРµР»Р°РєСЃР°С†РёРё, РЅР°С…РѕРґРёРј РЅРѕРІРѕРµ СЂРµС€РµРЅРёРµ
+				if (exit_condition > eps)
+				{
+					for (int i = 0; i < n; i++)
+						u[i] = w*u[i] + (1 - w)*u_[i];
+				}
+				//РёРЅР°С‡Рµ РІС‹С…РѕРґРёРј РёР· С†РёРєР»Р°
+				else break;
 			}
-			A.MultiplyAx(r, Ax);
-			b = -Scalar(p, Ax) / pp;
-			for (i = 0; i < n; i++)
-			{
-				z[i] = r[i] + b*z[i];
-				p[i] = Ax[i] + b*p[i];
-			}
-			dis = (dis - a * a * pp) / rr;
-			dis = sqrt(dis);
-		}
-		dis = Rel_Discrepancy(); 
-		for (int i = 0; i < n; i++)
-			fprintf(Out, "%.14lf\n", u[i]);
 
-		fprintf(Out, "%e	", t);
-		fprintf(Out, "%e	", dis);
-		fprintf(Out, "%d	", k - 1);
-		fprintf(Out, "\n\n");
+			for (int i = 0; i < n; i++)
+				fprintf(fo, "%.14lf\n", u[i]);
+			fprintf(fo, "%f\t", t);
+			fprintf(fo, "%d\t", k);
+			fprintf(fo, "%e\t", exit_condition);
+			fprintf(fo, "\n\n");
+
+			printf("Vector:");
+			for (int i = 0; i < n; i++)
+				printf("\t\t%.14lf\n", u[i]);
+			printf("%d\t", k);
+			printf("%e\t", exit_condition);
+			printf("\n\n");
+
+			t += ht;
+		}
+
+		fclose(fo);
 	}
 
 }

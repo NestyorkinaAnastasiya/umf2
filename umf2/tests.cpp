@@ -8,22 +8,23 @@ namespace tests
 		if (test == 1) return 1;
 		if (test == 2) return 1;
 		if (test == 3) return 1;
-		return 0.0;
+		return 1;
 	}
 	double Tests::Sigma(int formNumber, double x, double y)
 	{
 		if (test == 1) return 1;
 		if (test == 2) return 1;
 		if (test == 3) return 1;
-		return 0.0;
+		return 1;
 	}
 	double Tests::Ug(int formNumber, double x, double y, double t)
 	{
 		if (test == 1) return 1;
-
 		if (test == 2) return 2 * t;
+		if (test == 3) return 4 * t * t;
+		if (test == 4) return x*x*x;
+		if (test == 5) return pow(x+y,2);
 
-		if (test == 3) return 2 * pow(t, 2);
 	}
 	double Tests::Betta(int formNumber, double x, double y)
 	{
@@ -147,12 +148,14 @@ namespace tests
 			case 3: return exp(x + y);
 			}
 	}
-	double Tests::Fi(double u, double x, double y)
+	double Tests::Fi(double u)
 	{
 		if (test == 1) return 0;
 		if (test == 2) return 2;
 		if (test == 3) return 4*sqrt(u);
-		return 0.0;
+		if (test == 4) return -6*pow(u,1/3);
+		if (test == 5) return 4;
+		return 0;
 	}
 	Tests::Tests()
 	{

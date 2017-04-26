@@ -12,10 +12,16 @@ namespace slae
 	{
 		//Размерность задачи
 		int n;
-		//Максимальное количество итераций
-		const int maxiter = 10000;
+		//Максимальное количество итераций в решателе
+		int maxiter = 10000;
+		//Максимальное количество итераций по времени
+		int maxtime = 8;
+		//шаг по времени
+		const double ht = 0.1;
 		//Точность решения СЛАУ
 		const double eps = 1e-14;
+		//параметр релаксации
+		double w;
 		//Сетка
 		Grid grid;
 		//Хранилище тестовых функций
@@ -32,6 +38,8 @@ namespace slae
 		array <double, 9> locF;
 		//Глобальный вектор правой части
 		vector <double> F;
+		//Вектор приближенного решения на предыдущей итерации
+		vector <double> u_;
 		//Вектор приближенного решения
 		vector <double> u;
 		//Норма вектора правой части
@@ -68,8 +76,6 @@ namespace slae
 
 		//Текущее значение времени
 		double t;
-		//шаг по времени
-		double ht;
 		//Вектор невязки
 		vector <double> r;
 		//Вектор спуска
@@ -80,26 +86,24 @@ namespace slae
 		//Скалярное произведение векторов
 		double Scalar(const vector<double>& x, const vector<double>& y);
 
+		//Генерация СЛАУ на i-ой итерации по времени
 		void GenerateSLAE();
 		//LU-факторизация
 		void LU();
 		//Вспомогательные функции для решателя
-		void MultiplyUx(vector<double> a, vector<double>& result);
-		void LFx(vector<double> b, vector<double>& result);
-		void LTFx(vector<double> b, vector<double>& result);
-		void UFx(vector<double> b, vector<double>& result);
-		void UTFx(vector<double> b, vector<double>& result);
-		double IterMSG(const vector<double>& Az);
-	public:
-		SLAE();
-		void TSolve();
 		void LYF(const vector<double>& C, vector<double>& yl);
 		void UXY(const vector<double>& C, vector<double>& yu);
-		void LULOS(FILE * fd);
 		double Rel_Discrepancy();
-		void LOS(FILE * Out);
-		//Решатель МСГ с LU-факторизацией
-		void LU_MSG(FILE * fo);
+		//Решатель ЛОС с LU-факторизацией
+		void LULOS();
+
+		double StopIteration();
+
+	public:
+		SLAE();
+
+		void TSolve();
+
 		~SLAE() {};
 	};
 }

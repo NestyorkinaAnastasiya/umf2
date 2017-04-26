@@ -1,2 +1,8 @@
-﻿  umf2.vcxproj -> C:\Users\Анастасия\Documents\Visual Studio 2015\Projects\umf2\Release\umf2.exe
-  umf2.vcxproj -> C:\Users\Анастасия\Documents\Visual Studio 2015\Projects\umf2\Release\umf2.pdb (Full PDB)
+﻿  Создание кода
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(149): warning C4715: tests::Tests::Tetta: значение возвращается не при всех путях выполнения
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(108): warning C4715: tests::Tests::Ubetta: значение возвращается не при всех путях выполнения
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(68): warning C4715: tests::Tests::Betta: значение возвращается не при всех путях выполнения
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(27): warning C4715: tests::Tests::Ug: значение возвращается не при всех путях выполнения
+c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\grid.cpp(283): warning C4715: grid::Grid::FindArea: значение возвращается не при всех путях выполнения
+c:\users\���������\documents\visual studio 2015\projects\umf2\umf2\tests.cpp : fatal error C1083: Не удается открыть файл промежуточный код компилятора: C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Release\umf2.ipdb: Permission denied
+LINK : fatal error LNK1257: не удалось создать код
