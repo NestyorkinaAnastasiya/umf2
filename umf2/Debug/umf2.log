@@ -1,15 +1,2 @@
-﻿  tests.cpp
-  slae.cpp
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(188): warning C4018: <: несоответствие типов со знаком и без знака
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(192): warning C4018: <: несоответствие типов со знаком и без знака
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(200): warning C4018: <: несоответствие типов со знаком и без знака
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(204): warning C4018: <: несоответствие типов со знаком и без знака
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(207): warning C4018: <: несоответствие типов со знаком и без знака
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\slae.cpp(210): warning C4018: <: несоответствие типов со знаком и без знака
-  Создание кода...
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(69): warning C4715: tests::Tests::Betta: значение возвращается не при всех путях выполнения
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(28): warning C4715: tests::Tests::Ug: значение возвращается не при всех путях выполнения
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(109): warning C4715: tests::Tests::Ubetta: значение возвращается не при всех путях выполнения
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(150): warning C4715: tests::Tests::Tetta: значение возвращается не при всех путях выполнения
-  umf2.vcxproj -> C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Debug\umf2.exe
+﻿  umf2.vcxproj -> C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Debug\umf2.exe
   umf2.vcxproj -> C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Debug\umf2.pdb (Partial PDB)

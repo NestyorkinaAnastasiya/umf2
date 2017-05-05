@@ -1,8 +1,14 @@
-﻿  Создание кода
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(149): warning C4715: tests::Tests::Tetta: значение возвращается не при всех путях выполнения
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(108): warning C4715: tests::Tests::Ubetta: значение возвращается не при всех путях выполнения
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(68): warning C4715: tests::Tests::Betta: значение возвращается не при всех путях выполнения
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\tests.cpp(27): warning C4715: tests::Tests::Ug: значение возвращается не при всех путях выполнения
-c:\users\анастасия\documents\visual studio 2015\projects\umf2\umf2\grid.cpp(283): warning C4715: grid::Grid::FindArea: значение возвращается не при всех путях выполнения
-c:\users\���������\documents\visual studio 2015\projects\umf2\umf2\tests.cpp : fatal error C1083: Не удается открыть файл промежуточный код компилятора: C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Release\umf2.ipdb: Permission denied
-LINK : fatal error LNK1257: не удалось создать код
+﻿  slae.cpp
+slae.cpp(188): warning C4018: <: несоответствие типов со знаком и без знака
+slae.cpp(192): warning C4018: <: несоответствие типов со знаком и без знака
+slae.cpp(200): warning C4018: <: несоответствие типов со знаком и без знака
+slae.cpp(204): warning C4018: <: несоответствие типов со знаком и без знака
+slae.cpp(207): warning C4018: <: несоответствие типов со знаком и без знака
+slae.cpp(210): warning C4018: <: несоответствие типов со знаком и без знака
+  Создание кода
+  1 of 2989 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    20 functions had inline decision re-evaluated but remain unchanged
+  Создание кода завершено
+  umf2.vcxproj -> C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Release\umf2.exe
+  umf2.vcxproj -> C:\Users\Анастасия\documents\visual studio 2015\Projects\umf2\Release\umf2.pdb (Full PDB)

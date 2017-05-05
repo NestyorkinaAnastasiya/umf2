@@ -17,7 +17,7 @@ namespace slae
 		//Максимальное количество итераций по времени
 		int maxtime = 8;
 		//шаг по времени
-		const double ht = 0.1;
+		double ht = 0.1;
 		//Точность решения СЛАУ
 		const double eps = 1e-14;
 		//параметр релаксации

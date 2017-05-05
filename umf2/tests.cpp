@@ -3,27 +3,27 @@
 
 namespace tests
 {
-	double Tests::Lambda(int formNumber, double x, double y)
+	double Tests::Lambda(double x, double y)
 	{
 		if (test == 1) return 1;
 		if (test == 2) return 1;
 		if (test == 3) return 1;
 		return 1;
 	}
-	double Tests::Sigma(int formNumber, double x, double y)
+	double Tests::Sigma(double x, double y)
 	{
 		if (test == 1) return 1;
 		if (test == 2) return 1;
 		if (test == 3) return 1;
 		return 1;
 	}
-	double Tests::Ug(int formNumber, double x, double y, double t)
+	double Tests::Ug(double x, double y, double t)
 	{
-		if (test == 1) return 1;
-		if (test == 2) return 2 * t;
-		if (test == 3) return 4 * t * t;
+		if (test == 1) return x+y;
+		if (test == 2) return t;
+		if (test == 3) return x*x;
 		if (test == 4) return x*x*x;
-		if (test == 5) return pow(x+y,2);
+		if (test == 5) return pow(x,4);
 
 	}
 	double Tests::Betta(int formNumber, double x, double y)
@@ -148,13 +148,14 @@ namespace tests
 			case 3: return exp(x + y);
 			}
 	}
-	double Tests::Fi(double u)
+	double Tests::Fi(double u, double x, double y, double t)
 	{
 		if (test == 1) return 0;
-		if (test == 2) return 2;
-		if (test == 3) return 4*sqrt(u);
-		if (test == 4) return -6*pow(u,1/3);
-		if (test == 5) return 4;
+		if (test == 2) return 1;
+		if (test == 3) return -2;
+		if (test == 4) return -6 * cbrt(abs(u));
+		if (test == 5) return -12* sqrt(abs(u));
+		if (test == 6) return u;
 		return 0;
 	}
 	Tests::Tests()

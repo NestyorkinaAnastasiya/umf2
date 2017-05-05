@@ -15,8 +15,9 @@ namespace slae
 		u_.resize(n);
 		r.resize(n);
 		z.resize(n);
-		maxtime = 8;
-		w = 1;
+		maxtime = 4;
+		w = 0.62;
+		ht = 0.1;
 		//Генерация портрета матрицы и её инициализация
 		A.CreatePortret(n, grid);
 		globalM.CreatePortret(n, grid);
@@ -43,7 +44,7 @@ namespace slae
 				{
 					ksi = 0.5 + 0.5 * gaussPoints[0][k]; etta = 0.5 + 0.5 * gaussPoints[1][k];
 					x_ = x1 + ksi*hx; y_ = y1 + etta*hy;
-					lambda = tests.Lambda(element.numberOfArea, x_, y_);
+					lambda = tests.Lambda(x_, y_);
 
 					g1 += gaussWeights[k] * dphiksi[i](ksi, etta) * dphiksi[j](ksi, etta) * lambda;
 					g2 += gaussWeights[k] * dphietta[i](ksi, etta) * dphietta[j](ksi, etta) * lambda;
@@ -76,7 +77,7 @@ namespace slae
 				{
 					ksi = 0.5 + 0.5 * gaussPoints[0][k]; etta = 0.5 + 0.5 * gaussPoints[1][k];
 					x_ = x1 + ksi*hx; y_ = y1 + etta*hy;
-					sigma = tests.Sigma(element.numberOfArea, x_, y_);
+					sigma = tests.Sigma(x_, y_);
 
 					g +=  sigma *  gaussWeights[k] * phi[i](ksi, etta) * phi[j](ksi, etta);
 				}
@@ -114,9 +115,9 @@ namespace slae
 					{ 
 						ui = 0;
 						//разложение по базису предыдущего решения
-						for (int k = 0; k < 9; k++)
-							ui += u[grid.GetGlobalFuncNumber(elementNumber, k)] * phi[k](ksi, etta);
-						fi += tests.Fi(ui) * phi[l](ksi, etta);
+						for (int j = 0; j < 9; j++)
+							ui += u[element.dof[j]] * phi[j](ksi, etta);
+						fi += tests.Fi(ui, x_, y_, t)*phi[l](ksi, etta);
 					}
 					locF[i] += fi * gaussWeights[k] * phi[i](ksi, etta);
 				}
@@ -198,7 +199,7 @@ namespace slae
 		//добавка от матрицы масс по времени
 		globalM.MultiplyAx(u, b);
 		for (int i = 0; i < F.size(); i++)
-			F[i] += b[i];
+		F[i] += b[i];
 
 		//Учёт краевых условий
 		for (int i = 0; i < grid.ku[0].size(); i++)
@@ -228,9 +229,9 @@ namespace slae
 			double y3 = grid.nodes[element.nodes[2]].y;
 			double y2 = (y1 + y3) / 2;
 
-			g[0] = tests.Ug(formNumber, x, y1,t);
-			g[1] = tests.Ug(formNumber, x, y2, t);
-			g[2] = tests.Ug(formNumber, x, y3, t);
+			g[0] = tests.Ug(x, y1,t);
+			g[1] = tests.Ug(x, y2, t);
+			g[2] = tests.Ug(x, y3, t);
 		}
 		break;
 		//правое ребро
@@ -241,9 +242,9 @@ namespace slae
 			double y3 = grid.nodes[element.nodes[3]].y;
 			double y2 = (y1 + y3) / 2;
 
-			g[0] = tests.Ug(formNumber, x, y1, t);
-			g[1] = tests.Ug(formNumber, x, y2, t);
-			g[2] = tests.Ug(formNumber, x, y3, t);
+			g[0] = tests.Ug(x, y1, t);
+			g[1] = tests.Ug(x, y2, t);
+			g[2] = tests.Ug(x, y3, t);
 		}
 		break;
 		//нижнее ребро
@@ -253,9 +254,9 @@ namespace slae
 			double x1 = grid.nodes[element.nodes[0]].x;
 			double x3 = grid.nodes[element.nodes[1]].x;
 			double x2 = (x1+x3)/2;
-			g[0] = tests.Ug(formNumber, x1, y, t);
-			g[1] = tests.Ug(formNumber, x2, y, t);
-			g[2] = tests.Ug(formNumber, x3, y, t);
+			g[0] = tests.Ug(x1, y, t);
+			g[1] = tests.Ug(x2, y, t);
+			g[2] = tests.Ug(x3, y, t);
 		}
 		break;
 		//верхнее ребро
@@ -265,9 +266,9 @@ namespace slae
 			double x1 = grid.nodes[element.nodes[2]].x;
 			double x3 = grid.nodes[element.nodes[3]].x;
 			double x2 = (x1 + x3) / 2;
-			g[0] = tests.Ug(formNumber, x1, y, t);
-			g[1] = tests.Ug(formNumber, x2, y, t);
-			g[2] = tests.Ug(formNumber, x3, y, t);
+			g[0] = tests.Ug(x1, y, t);
+			g[1] = tests.Ug(x2, y, t);
+			g[2] = tests.Ug(x3, y, t);
 		}
 		break;
 		default:; break;
@@ -774,6 +775,7 @@ namespace slae
 	double SLAE::StopIteration()
 	{
 		vector <double> b(n), z(n);
+		
 		//генерируем СЛАУ с текущим решением
 		GenerateSLAE();
 		//умножаем матрицу на текущее решение
@@ -791,12 +793,31 @@ namespace slae
 		fopen_s(&fo, "result.txt", "w");
 		int k;
 		double exit_condition;
-		t = 1;
+		t = ht;
 
 		vector <double> b(n), z(n);
-		u = { 0,1,8,0,1,8,0,1,8 };
+		double x_0, x_1, x_2, y_0, y_1, y_2;
+		for (auto i : grid.elements)
+		{
+			x_0 = grid.nodes[i.nodes[0]].x;
+			x_2 = grid.nodes[i.nodes[1]].x;
+			x_1 = (x_2 - x_0) / 2;
+			y_0 = grid.nodes[i.nodes[0]].y;
+			y_2 = grid.nodes[i.nodes[2]].y;
+			y_1 = (y_2 - y_0) / 2;
+			u[i.dof[0]] = tests.Ug(x_0, y_0, 0);
+			u[i.dof[1]] = tests.Ug(x_1, y_0, 0);
+			u[i.dof[2]] = tests.Ug(x_2, y_0, 0);
 
-		//for (auto &i : u) i = 1;
+
+			u[i.dof[3]] = tests.Ug(x_0, y_1, 0);
+			u[i.dof[4]] = tests.Ug(x_1, y_1, 0);
+			u[i.dof[5]] = tests.Ug(x_2, y_1, 0);
+
+			u[i.dof[6]] = tests.Ug(x_0, y_2, 0);
+			u[i.dof[7]] = tests.Ug(x_1, y_2, 0);
+			u[i.dof[8]] = tests.Ug(x_2, y_2, 0);
+		}
 		//цикл по времени
 		while (t < maxtime)
 		{
@@ -810,6 +831,7 @@ namespace slae
 				GenerateSLAE();
 				//умножаем матрицу на текущее решение
 				A.MultiplyAx(u, z);
+
 				//и находим абсолютную невязку
 				for (int i = 0; i < n; i++)
 					b[i] = z[i] - F[i];
