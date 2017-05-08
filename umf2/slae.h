@@ -19,7 +19,9 @@ namespace slae
 		//шаг по времени
 		double ht = 0.1;
 		//Точность решения СЛАУ
-		const double eps = 1e-14;
+		const double eps = 1e-10;
+
+		const double eps_n = 1e-7;
 		//параметр релаксации
 		double w;
 		//Сетка
@@ -38,8 +40,13 @@ namespace slae
 		array <double, 9> locF;
 		//Глобальный вектор правой части
 		vector <double> F;
+		array <double, 9> newF;
 		//Вектор приближенного решения на предыдущей итерации
-		vector <double> u_;
+		//по нелинейности
+		vector <double> u_n;
+		//Вектор приближенного решения на предыдущей итерации
+		//по времени
+		vector <double> u_t;
 		//Вектор приближенного решения
 		vector <double> u;
 		//Норма вектора правой части
@@ -51,10 +58,17 @@ namespace slae
 		void CalculateM(int elementNumber);
 		//Сборка локальных правых частей
 		void CalculateLocalF(int elementNumber);
+		void CalculateLocalFNewton(int elementNumber);
 		//Добавка локального элемента в глобальный
 		void AddElementToGlobalMatrix(Matrix &B, int i, int j, double element);
 		//Сборка локальных матриц(векторов) и добавление в глобальные
 		void CalculateLocals(int elementNumber);
+
+		void CalculateLocalsNewton(int elementNumber);
+
+		void GenerateSLAENewton();
+
+		double StopIterationNewton();
 
 		//Вектор праввой части для первого краевого 
 		array<double, 3> g;
@@ -64,10 +78,6 @@ namespace slae
 		void CalculateBoundaries1ForNode(int node, double gi, double weight);
 		//Учёт первого краевого условия
 		void CalculateBoundaries1(int number);
-		//Учёт второго краевого условия
-		void CalculateBoundaries2(int number);
-		//Учёт третьего краевого условия
-		void CalculateBoundaries3(int number);
 
 		//Компоненты матрицы с факторизацией
 		vector <double> L;
@@ -103,6 +113,7 @@ namespace slae
 		SLAE();
 
 		void TSolve();
+		void TSolveNewton();
 
 		~SLAE() {};
 	};

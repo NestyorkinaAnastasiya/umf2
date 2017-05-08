@@ -12,11 +12,12 @@ namespace slae
 
 		F.resize(n);
 		u.resize(n);
-		u_.resize(n);
+		u_n.resize(n);
+		u_t.resize(n);
 		r.resize(n);
 		z.resize(n);
-		maxtime = 4;
-		w = 0.62;
+		maxtime = 3;
+		w = 0.67;
 		ht = 0.1;
 		//Генерация портрета матрицы и её инициализация
 		A.CreatePortret(n, grid);
@@ -44,7 +45,7 @@ namespace slae
 				{
 					ksi = 0.5 + 0.5 * gaussPoints[0][k]; etta = 0.5 + 0.5 * gaussPoints[1][k];
 					x_ = x1 + ksi*hx; y_ = y1 + etta*hy;
-					lambda = tests.Lambda(x_, y_);
+					lambda = tests.Lambda(x_, y_, t);
 
 					g1 += gaussWeights[k] * dphiksi[i](ksi, etta) * dphiksi[j](ksi, etta) * lambda;
 					g2 += gaussWeights[k] * dphietta[i](ksi, etta) * dphietta[j](ksi, etta) * lambda;
@@ -77,7 +78,7 @@ namespace slae
 				{
 					ksi = 0.5 + 0.5 * gaussPoints[0][k]; etta = 0.5 + 0.5 * gaussPoints[1][k];
 					x_ = x1 + ksi*hx; y_ = y1 + etta*hy;
-					sigma = tests.Sigma(x_, y_);
+					sigma = tests.Sigma(x_, y_,t);
 
 					g +=  sigma *  gaussWeights[k] * phi[i](ksi, etta) * phi[j](ksi, etta);
 				}
@@ -197,19 +198,13 @@ namespace slae
 		b.resize(n);
 
 		//добавка от матрицы масс по времени
-		globalM.MultiplyAx(u, b);
+		globalM.MultiplyAx(u_t, b);
 		for (int i = 0; i < F.size(); i++)
 		F[i] += b[i];
 
 		//Учёт краевых условий
 		for (int i = 0; i < grid.ku[0].size(); i++)
 			CalculateBoundaries1(i);
-
-		for (int i = 0; i < grid.ku[1].size(); i++)
-			CalculateBoundaries2(i);
-
-		for (int i = 0; i < grid.ku[2].size(); i++)
-			CalculateBoundaries3(i);
 
 		normF = Norm(F);
 	}
@@ -332,268 +327,6 @@ namespace slae
 			Calculate_g(grid.ku[0][number].formNumber[3], 3, grid.ku[0][number].elem);
 			for (int i = 0; i < 3; i++)
 				CalculateBoundaries1ForNode(indexes[i], g[i], 1);
-		}
-	}
-
-	//Учёт второго краевого условия
-	void SLAE::CalculateBoundaries2(int number)
-	{
-		Element element = grid.elements[grid.ku[1][number].elem];
-		double g, jacobian;
-		double x1 = grid.nodes[element.nodes[0]].x, x3 = grid.nodes[element.nodes[1]].x;
-		double y1 = grid.nodes[element.nodes[0]].y, y3 = grid.nodes[element.nodes[2]].y;
-		double hx = x3 - x1;
-		double hy = y3 - y1;
-		//Левое ребро
-		if (grid.ku[1][number].edges[0] == 1)
-		{
-			//Глобальные номера базисных функций
-			array<int, 3> indexes = { element.dof[0], element.dof[3], element.dof[6] };
-			//Локальные номера
-			array<int, 3> id = { 0, 3, 6 };
-
-			jacobian = hy / 2;
-
-			for (int i = 0; i < 3; i++)
-			{
-				g = 0;
-				for (int k = 0; k < 5; k++)
-				{
-					double etta = 0.5 + 0.5 * gaussPoints1[k];
-					double y_ = y1 + etta*hy;
-					double tetta_ = tests.Tetta(grid.ku[1][number].formNumber[0], grid.nodes[element.dof[id[i]]].x, y_);
-					g += gaussWeights1[k] * phi[id[i]](0, etta) * tetta_;
-				}
-				//Добавляем к глобальному вектору правой части
-				F[indexes[i]] += g * jacobian;
-			}
-		}
-		//Правое ребро
-		if (grid.ku[1][number].edges[1] == 1)
-		{
-			int indexes[3] = { element.dof[2], element.dof[5], element.dof[8] };
-			int id[3] = { 2, 5, 8 };
-
-			jacobian = hy / 2;
-
-			for (int i = 0; i < 3; i++)
-			{
-				g = 0;
-				for (int k = 0; k < 5; k++)
-				{
-					double etta = 0.5 + 0.5 * gaussPoints1[k];
-					double y_ = y1 + etta*hy;
-					double tetta_ = tests.Tetta(grid.ku[1][number].formNumber[1], grid.nodes[element.dof[id[i]]].x, y_);
-					g += gaussWeights1[k] * phi[id[i]](1, etta) * tetta_;
-				}
-				F[indexes[i]] += g * jacobian;
-			}
-		}
-		//Нижнее ребро
-		if (grid.ku[1][number].edges[2] == 1)
-		{
-			int indexes[3] = { element.dof[0], element.dof[1], element.dof[2] };
-			int id[3] = { 0, 1, 2 };
-
-			jacobian = hx / 2;
-
-			for (int i = 0; i < 3; i++)
-			{
-				g = 0;
-				for (int k = 0; k < 5; k++)
-				{
-					double ksi = 0.5 + 0.5 * gaussPoints1[k];
-					double x_ = x1 + ksi*hx;
-					double tetta_ = tests.Tetta(grid.ku[1][number].formNumber[2], x_, grid.nodes[element.dof[id[i]]].y);
-					g += gaussWeights1[k] * phi[id[i]](ksi, 0) * tetta_;
-				}
-				F[indexes[i]] += g * jacobian;
-			}
-		}
-		//Верхнее ребро
-		if (grid.ku[1][number].edges[3] == 1)
-		{
-			int indexes[3] = { element.dof[6], element.dof[7], element.dof[8] };
-			int id[3] = { 6, 7, 8 };
-
-			jacobian = hx / 2;
-
-			for (int i = 0; i < 3; i++)
-			{
-				g = 0;
-				for (int k = 0; k < 5; k++)
-				{
-					double ksi = 0.5 + 0.5 * gaussPoints1[k];
-					double x_ = x1 + ksi*hx;
-					double tetta_ = tests.Tetta(grid.ku[1][number].formNumber[3], x_, grid.nodes[element.dof[id[i]]].y);
-					g += gaussWeights1[k] * phi[id[i]](ksi, 1) * tetta_;
-				}
-				F[indexes[i]] += g * jacobian;
-			}
-		}
-	}
-
-	//Учёт третьего краевого условия
-	void SLAE::CalculateBoundaries3(int number)
-	{
-		Element element = grid.elements[grid.ku[2][number].elem];
-		double g, jacobian, u_betta, betta;
-		double x1 = grid.nodes[element.nodes[0]].x, x3 = grid.nodes[element.nodes[1]].x;
-		double y1 = grid.nodes[element.nodes[0]].y, y3 = grid.nodes[element.nodes[2]].y;
-		double hx = x3 - x1;
-		double hy = y3 - y1;
-
-		//Левое ребро
-		if (grid.ku[2][number].edges[0] == 1)
-		{
-			int indexes[3] = { element.dof[0], element.dof[3], element.dof[6] };
-			int id[3] = { 0, 3, 6 };
-
-			jacobian = hy / 2;
-
-			for (int i = 0; i < 3; i++)
-			{
-				g = 0;
-				for (int k = 0; k < 5; k++)
-				{
-					double etta = 0.5 + 0.5 * gaussPoints1[k];
-					double y_ = y1 + etta*hy;
-					betta = tests.Betta(grid.ku[2][number].formNumber[0], grid.nodes[element.dof[id[i]]].x, y_);
-					u_betta = tests.Ubetta(grid.ku[2][number].formNumber[0], grid.nodes[element.dof[id[i]]].x, y_);
-					g += gaussWeights1[k] * phi[id[i]](0, etta)* u_betta * betta;
-				}
-				F[indexes[i]] += g * jacobian;
-			}
-
-			for (int i = 0; i < 9; i++)
-			{
-				for (int j = 0; j < 9; j++)
-				{
-					g = 0;
-					for (int k = 0; k < 5; k++)
-					{
-						double etta = 0.5 + 0.5 * gaussPoints1[k];
-						double y_ = y1 + etta*hy;
-						betta = tests.Betta(grid.ku[2][number].formNumber[0], grid.nodes[element.dof[id[i]]].x, y_);
-						g += gaussWeights1[k] * phi[i](0, etta) * phi[j](0, etta);
-					}
-					AddElementToGlobalMatrix(A,element.dof[i], element.dof[j], g * jacobian * betta);
-				}
-			}
-		}
-		//Правое ребро
-		if (grid.ku[2][number].edges[1] == 1)
-		{
-
-			int indexes[3] = { element.dof[2], element.dof[5], element.dof[8] };
-			int id[3] = { 2, 5, 8 };
-
-			jacobian = hy / 2;
-
-			for (int i = 0; i < 3; i++)
-			{
-				for (int k = 0; k < 5; k++)
-				{
-					double etta = 0.5 + 0.5 * gaussPoints1[k];
-					double y_ = y1 + etta*hy;
-					betta = tests.Betta(grid.ku[2][number].formNumber[1], grid.nodes[element.dof[id[i]]].x, y_);
-					u_betta = tests.Ubetta(grid.ku[2][number].formNumber[1], grid.nodes[element.dof[id[i]]].x, y_);
-					g += gaussWeights1[k] * phi[id[i]](1, etta) * u_betta * betta;
-				}
-				F[indexes[i]] += g * jacobian;
-			}
-
-			for (int i = 0; i < 9; i++)
-			{
-				for (int j = 0; j < 9; j++)
-				{
-					g = 0;
-					for (int k = 0; k < 5; k++)
-					{
-						double etta = 0.5 + 0.5 * gaussPoints1[k];
-						double y_ = y1 + etta*hy;
-						betta = tests.Betta(grid.ku[2][number].formNumber[1], grid.nodes[element.dof[id[i]]].x, y_);
-						g += gaussWeights1[k] * phi[i](1, etta) * phi[j](1, etta) * betta;
-					}
-					AddElementToGlobalMatrix(A,element.dof[i], element.dof[j], g * jacobian);
-				}
-			}
-		}
-		//Нижнее ребро
-		if (grid.ku[2][number].edges[2] == 1)
-		{
-			int indexes[3] = { element.dof[0], element.dof[1], element.dof[2] };
-			int id[3] = { 0, 1, 2 };
-
-			jacobian = hx / 2;
-
-			for (int i = 0; i < 3; i++)
-			{
-				g = 0;
-				for (int k = 0; k < 5; k++)
-				{
-					double ksi = 0.5 + 0.5 * gaussPoints1[k];
-					double x_ = x1 + ksi*hx;
-					betta = tests.Betta(grid.ku[2][number].formNumber[2], x_, grid.nodes[element.dof[id[i]]].y);
-					u_betta = tests.Ubetta(grid.ku[2][number].formNumber[2], x_, grid.nodes[element.dof[id[i]]].y);
-					g += gaussWeights1[k] * phi[id[i]](ksi, 0) * u_betta * betta;
-				}
-				F[indexes[i]] += g * jacobian;
-			}
-
-			for (int i = 0; i < 9; i++)
-			{
-				for (int j = 0; j < 9; j++)
-				{
-					g = 0;
-					for (int k = 0; k < 5; k++)
-					{
-						double ksi = 0.5 + 0.5 * gaussPoints1[k];
-						double x_ = x1 + ksi*hx;
-						betta = tests.Betta(grid.ku[2][number].formNumber[2], x_, grid.nodes[element.dof[id[i]]].y);
-						g += gaussWeights1[k] * phi[i](ksi, 0) * phi[j](ksi, 0)* betta;
-					}
-					AddElementToGlobalMatrix(A, element.dof[i], element.dof[j], g * jacobian);
-				}
-			}
-		}
-		//Верхнее ребро
-		if (grid.ku[2][number].edges[3] == 1)
-		{
-			int indexes[3] = { element.dof[6], element.dof[7], element.dof[8] };
-			int id[3] = { 6, 7, 8 };
-
-			jacobian = hx / 2;
-
-			for (int i = 0; i < 3; i++)
-			{
-				g = 0;
-				for (int k = 0; k < 5; k++)
-				{
-					double ksi = 0.5 + 0.5 * gaussPoints1[k];
-					double x_ = x1 + ksi*hx;
-					betta = tests.Betta(grid.ku[2][number].formNumber[3], x_, grid.nodes[element.dof[id[i]]].y);
-					u_betta = tests.Ubetta(grid.ku[2][number].formNumber[3], x_, grid.nodes[element.dof[id[i]]].y);
-					g += gaussWeights1[k] * phi[id[i]](ksi, 1) * u_betta * betta;
-				}
-				F[indexes[i]] += g * jacobian;
-			}
-
-			for (int i = 0; i < 9; i++)
-			{
-				for (int j = 0; j < 9; j++)
-				{
-					g = 0;
-					for (int k = 0; k < 5; k++)
-					{
-						double ksi = 0.5 + 0.5 * gaussPoints1[k];
-						double x_ = x1 + ksi*hx;
-						betta = tests.Betta(grid.ku[2][number].formNumber[3], x_, grid.nodes[element.dof[id[i]]].y);
-						g += gaussWeights1[k] * phi[i](ksi, 1) * phi[j](ksi, 1) * betta;
-					}
-					AddElementToGlobalMatrix(A, element.dof[i], element.dof[j], g * jacobian);
-				}
-			}
 		}
 	}
 
@@ -793,9 +526,9 @@ namespace slae
 		fopen_s(&fo, "result.txt", "w");
 		int k;
 		double exit_condition;
+		ht /= 1;
 		t = ht;
-
-		vector <double> b(n), z(n);
+		//определение вектора решения на 0 временном слое
 		double x_0, x_1, x_2, y_0, y_1, y_2;
 		for (auto i : grid.elements)
 		{
@@ -819,22 +552,18 @@ namespace slae
 			u[i.dof[8]] = tests.Ug(x_2, y_2, 0);
 		}
 		//цикл по времени
-		while (t < maxtime)
-		{
+		//for (int j = 0; t < maxtime; j++)
+		//{
 			printf("Calculating......([t] = %f)\n", t);
+			//сохраняем решение на предыдущем временном слое
+			u_t = u;
 			//цикл по нелинейности
 			for (k = 1; k < maxiter; k++)
 			{
-				//сохраняем предыдущее решение
-				u_ = u;
+				//сохраняем предыдущее решение по нелинейности
+				u_n = u;
 				//находим новое решение
 				GenerateSLAE();
-				//умножаем матрицу на текущее решение
-				A.MultiplyAx(u, z);
-
-				//и находим абсолютную невязку
-				for (int i = 0; i < n; i++)
-					b[i] = z[i] - F[i];
 				LULOS();
 				//проверяем условие останова 
 				//+ генерация СЛАУ с текущим решением
@@ -844,10 +573,11 @@ namespace slae
 				if (exit_condition > eps)
 				{
 					for (int i = 0; i < n; i++)
-						u[i] = w*u[i] + (1 - w)*u_[i];
+						u[i] = w*u[i] + (1 - w)*u_n[i];
 				}
 				//иначе выходим из цикла
 				else break;
+					
 			}
 
 			for (int i = 0; i < n; i++)
@@ -865,9 +595,189 @@ namespace slae
 			printf("\n\n");
 
 			t += ht;
-		}
+		//}
 
 		fclose(fo);
 	}
 
+	void SLAE::CalculateLocalFNewton(int elementNumber)
+	{
+		Element element = grid.elements[elementNumber];
+		double dfi, ksi, etta, x_, y_, ui,
+			x1 = grid.nodes[element.nodes[0]].x, x3 = grid.nodes[element.nodes[1]].x,
+			y1 = grid.nodes[element.nodes[0]].y, y3 = grid.nodes[element.nodes[2]].y,
+			hx = x3 - x1, hy = y3 - y1,
+			jacobian = hx * hy / 4.0;
+
+		for (int i = 0; i < 9; i++)
+		{
+			newF[i] = 0;
+			for (int k = 0; k < 25; k++)
+			{
+				ksi = 0.5 + 0.5 * gaussPoints[0][k]; etta = 0.5 + 0.5 * gaussPoints[1][k];
+				x_ = x1 + ksi*hx; y_ = y1 + etta*hy;
+
+				newF[i] += tests.dFdq(u[element.dof[i]], x_, y_, t)*gaussWeights[k] * phi[i](ksi, etta);
+			}
+			newF[i] *= jacobian;
+		}
+	}
+
+	void SLAE::CalculateLocalsNewton(int elementNumber)
+	{
+		Element element = grid.elements[elementNumber];
+		int ki, kj;
+		double sum = 0;
+
+		//вычисление локальных матриц
+		CalculateG(elementNumber);
+		CalculateM(elementNumber);
+		CalculateLocalF(elementNumber);
+		CalculateLocalFNewton(elementNumber);
+
+		for (int k = 0; k < 9; k++)
+			sum += newF[k] * u[element.dof[k]];
+
+		for (int i = 0; i < 9; i++)
+		{
+
+			ki = element.dof[i];
+			for (int j = 0; j < 9; j++)
+			{
+				kj = element.dof[j];
+
+				//добавка в глобальную матрицу А
+				AddElementToGlobalMatrix(A, ki, kj, G[i][j] + M[i][j] - newF[j]);
+				//добавка в глобальную матрицу масс
+				AddElementToGlobalMatrix(globalM, ki, kj, M[i][j]);
+			}
+
+			//добавка в глобальную правую часть
+			F[ki] += locF[i] - sum;
+		}
+	}
+	//Генерация СЛАУ
+	void SLAE::GenerateSLAENewton()
+	{
+		for (int i = 0; i < n; i++)
+			A.di[i] =  F[i] = globalM.di[i] = 0;
+		for (int i = 0; i < A.ggl.size(); i++)
+			A.ggl[i] = A.ggu[i] = globalM.ggl[i] = globalM.ggu[i] = 0;
+
+		//Высчитывание локальных матриц(векторов) и добавление в глобальные
+		for (int i = 0; i < grid.elements.size(); i++)
+			CalculateLocalsNewton(i);
+
+		vector<double> b;
+		b.resize(n);
+
+		//добавка от матрицы масс по времени
+		globalM.MultiplyAx(u_t, b);
+		for (int i = 0; i < F.size(); i++)
+			F[i] += b[i];
+
+		//Учёт краевых условий
+		for (int i = 0; i < grid.ku[0].size(); i++)
+			CalculateBoundaries1(i);
+
+		normF = Norm(F);
+	}
+
+	double SLAE::StopIterationNewton()
+	{
+		vector <double> b(n), z(n);
+
+		//генерируем СЛАУ с текущим решением
+		GenerateSLAE();
+		//умножаем матрицу на текущее решение
+		A.MultiplyAx(u, z);
+		//и находим абсолютную невязку
+		for (int i = 0; i < n; i++)
+			b[i] = z[i] - F[i];
+
+		return Norm(b) / Norm(F);
+	}
+
+
+	void SLAE::TSolveNewton()
+	{
+		FILE *fo;
+		fopen_s(&fo, "result.txt", "a+b");
+		int k;
+		double exit_condition;
+		ht /= 1;
+		t = ht;
+		//определение вектора решения на 0 временном слое
+		double x_0, x_1, x_2, y_0, y_1, y_2;
+		for (auto i : grid.elements)
+		{
+			x_0 = grid.nodes[i.nodes[0]].x;
+			x_2 = grid.nodes[i.nodes[1]].x;
+			x_1 = (x_2 - x_0) / 2;
+			y_0 = grid.nodes[i.nodes[0]].y;
+			y_2 = grid.nodes[i.nodes[2]].y;
+			y_1 = (y_2 - y_0) / 2;
+			u[i.dof[0]] = tests.Ug(x_0, y_0, 0);
+			u[i.dof[1]] = tests.Ug(x_1, y_0, 0);
+			u[i.dof[2]] = tests.Ug(x_2, y_0, 0);
+
+
+			u[i.dof[3]] = tests.Ug(x_0, y_1, 0);
+			u[i.dof[4]] = tests.Ug(x_1, y_1, 0);
+			u[i.dof[5]] = tests.Ug(x_2, y_1, 0);
+
+			u[i.dof[6]] = tests.Ug(x_0, y_2, 0);
+			u[i.dof[7]] = tests.Ug(x_1, y_2, 0);
+			u[i.dof[8]] = tests.Ug(x_2, y_2, 0);
+		}
+
+		fprintf(fo,"\n\n****************NEWTON***************\n\n");
+		//цикл по времени
+		//for (int j = 0; t < maxtime; j++)
+		//{
+			printf("Calculating......([t] = %f)\n", t);
+			//сохраняем решение на предыдущем временном слое
+			u_t = u;
+			//цикл по нелинейности
+			for (k = 1; k < maxiter; k++)
+			{
+				//сохраняем предыдущее решение по нелинейности
+				u_n = u;
+				//находим новое решение
+				GenerateSLAENewton();
+				LULOS();
+				//проверяем условие останова 
+				//+ генерация СЛАУ с текущим решением
+				exit_condition = StopIterationNewton();
+				//если оно не выполнено, то, используя параметр
+				//релаксации, находим новое решение
+				if (exit_condition > eps_n)
+				{
+					for (int i = 0; i < n; i++)
+						u[i] = w*u[i] + (1 - w)*u_n[i];
+				}
+				//иначе выходим из цикла
+				else break;
+
+			}
+
+			for (int i = 0; i < n; i++)
+				fprintf(fo, "%.14lf\n", u[i]);
+			fprintf(fo, "%f\t", t);
+			fprintf(fo, "%d\t", k);
+			fprintf(fo, "%e\t", exit_condition);
+			fprintf(fo, "\n\n");
+
+			printf("Vector:");
+			for (int i = 0; i < n; i++)
+				printf("\t\t%.14lf\n", u[i]);
+			printf("%d\t", k);
+			printf("%e\t", exit_condition);
+			printf("\n\n");
+
+			t += ht;
+		//}
+
+		fclose(fo);
+	}
 }
