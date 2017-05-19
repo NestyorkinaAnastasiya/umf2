@@ -45,7 +45,7 @@ namespace grid
 		fclose(fo);
 	}
 
-	//Поиск глобального номера б.ф. dofsNumber в элементе
+	//ГЏГ®ГЁГ±ГЄ ГЈГ«Г®ГЎГ Г«ГјГ­Г®ГЈГ® Г­Г®Г¬ГҐГ°Г  ГЎ.Гґ. dofsNumber Гў ГЅГ«ГҐГ¬ГҐГ­ГІГҐ
 	bool Element::SearchDof(int dofsNumber)
 	{
 		for (int i = 0; i < 9; i++)
@@ -68,16 +68,16 @@ namespace grid
 
 	Grid::~Grid() {}
 
-	//Генерация координаты с учётом разбиения на всех интервалах
-	void Grid::PartitionСoordinate(vector <double> &x, vector <double> areasLines,
+	//ГѓГҐГ­ГҐГ°Г Г¶ГЁГї ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ» Г± ГіГ·ВёГІГ®Г¬ Г°Г Г§ГЎГЁГҐГ­ГЁГї Г­Г  ГўГ±ГҐГµ ГЁГ­ГІГҐГ°ГўГ Г«Г Гµ
+	void Grid::PartitionГ‘oordinate(vector <double> &x, vector <double> areasLines,
 		vector <double> coefficient, vector <int> nIntervals)
 	{
 		int count;
-		//длина интервала
+		//Г¤Г«ГЁГ­Г  ГЁГ­ГІГҐГ°ГўГ Г«Г 
 		double l;
-		//шаг
+		//ГёГ ГЈ
 		double h;
-		//число интервалов
+		//Г·ГЁГ±Г«Г® ГЁГ­ГІГҐГ°ГўГ Г«Г®Гў
 		int nLines = areasLines.size();
 
 		count = 0;
@@ -86,27 +86,27 @@ namespace grid
 			x.push_back(areasLines[i]);
 			count++;
 
-			//длина интервала
+			//Г¤Г«ГЁГ­Г  ГЁГ­ГІГҐГ°ГўГ Г«Г 
 			l = abs(areasLines[i + 1] - areasLines[i]);
 
-			//рассчитываем первый шаг
-			//равномерная
+			//Г°Г Г±Г±Г·ГЁГІГ»ГўГ ГҐГ¬ ГЇГҐГ°ГўГ»Г© ГёГ ГЈ
+			//Г°Г ГўГ­Г®Г¬ГҐГ°Г­Г Гї
 			if (abs(1.0 - coefficient[i]) < 1E-14)
 				h = l / nIntervals[i];
-			else //сгущаем вправо
+			else //Г±ГЈГіГ№Г ГҐГ¬ ГўГЇГ°Г ГўГ®
 				if (coefficient[i] < 1)
 				{
 					h = l * (1.0 - coefficient[i]);
 					h /= 1.0 - pow(coefficient[i], nIntervals[i]);
 				}
-				else //сгущаем влево
+				else //Г±ГЈГіГ№Г ГҐГ¬ ГўГ«ГҐГўГ®
 				{
 					h = l * (coefficient[i] - 1.0);
 					h /= coefficient[i] * (pow(coefficient[i], nIntervals[i] - 1.0) - 1.0);
 					h += coefficient[i] - 1.0;
 				}
 
-			//получаем сетку внутри интервала
+			//ГЇГ®Г«ГіГ·Г ГҐГ¬ Г±ГҐГІГЄГі ГўГ­ГіГІГ°ГЁ ГЁГ­ГІГҐГ°ГўГ Г«Г 
 			for (int j = 1; j < nIntervals[i]; j++)
 			{
 				if (j != 1) h *= coefficient[i];
@@ -117,41 +117,41 @@ namespace grid
 		x.push_back(areasLines[nLines - 1]);
 	}
 
-	//Добавление узла
+	//Г„Г®ГЎГ ГўГ«ГҐГ­ГЁГҐ ГіГ§Г«Г 
 	void Grid::PushNode(double x, double y)
 	{
 		Point p;
 		p.y = y;
 		p.x = x;
-		//кладём узел в конец массива узлов
+		//ГЄГ«Г Г¤ВёГ¬ ГіГ§ГҐГ« Гў ГЄГ®Г­ГҐГ¶ Г¬Г Г±Г±ГЁГўГ  ГіГ§Г«Г®Гў
 		nodes.push_back(p);
 	}
 
-	//Построение сетки
+	//ГЏГ®Г±ГІГ°Г®ГҐГ­ГЁГҐ Г±ГҐГІГЄГЁ
 	void Grid::BuildGrid()
 	{
-		//для iого интервала и каждой координаты
-		//коэффициент разрядки
+		//Г¤Г«Гї iГ®ГЈГ® ГЁГ­ГІГҐГ°ГўГ Г«Г  ГЁ ГЄГ Г¦Г¤Г®Г© ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ»
+		//ГЄГ®ГЅГґГґГЁГ¶ГЁГҐГ­ГІ Г°Г Г§Г°ГїГ¤ГЄГЁ
 		vector <double> xCoefficient;
 		vector <double> yCoefficient;
-		//число подинтервалов
+		//Г·ГЁГ±Г«Г® ГЇГ®Г¤ГЁГ­ГІГҐГ°ГўГ Г«Г®Гў
 		vector <int> xIntervals;
 		vector <int> yIntervals;
 
-		//количество координатных линий по x и y
+		//ГЄГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ­Г»Гµ Г«ГЁГ­ГЁГ© ГЇГ® x ГЁ y
 		int xLines = areasLines.x.size();
 		int yLines = areasLines.y.size();
 
-		//геометрические линии разбиения по х и y
+		//ГЈГҐГ®Г¬ГҐГІГ°ГЁГ·ГҐГ±ГЄГЁГҐ Г«ГЁГ­ГЁГЁ Г°Г Г§ГЎГЁГҐГ­ГЁГї ГЇГ® Гµ ГЁ y
 		vector <double> xi;
 		vector <double> yj;
 
-		//временная переменная для считывания
+		//ГўГ°ГҐГ¬ГҐГ­Г­Г Гї ГЇГҐГ°ГҐГ¬ГҐГ­Г­Г Гї Г¤Г«Гї Г±Г·ГЁГІГ»ГўГ Г­ГЁГї
 		int tmp1;
-		//временная переменная для считывания
+		//ГўГ°ГҐГ¬ГҐГ­Г­Г Гї ГЇГҐГ°ГҐГ¬ГҐГ­Г­Г Гї Г¤Г«Гї Г±Г·ГЁГІГ»ГўГ Г­ГЁГї
 		double tmp2;
 
-		//число узлов и число элементов
+		//Г·ГЁГ±Г«Г® ГіГ§Г«Г®Гў ГЁ Г·ГЁГ±Г«Г® ГЅГ«ГҐГ¬ГҐГ­ГІГ®Гў
 		int nNodes, nElements;
 
 		xIntervals.reserve(xLines - 1); xCoefficient.reserve(xLines - 1);
@@ -159,7 +159,7 @@ namespace grid
 
 		FILE *fo;
 		fopen_s(&fo,"Intervals.txt", "r");
-		//ввод количества интервалов по х и у и коэффициентов разрядки
+		//ГўГўГ®Г¤ ГЄГ®Г«ГЁГ·ГҐГ±ГІГўГ  ГЁГ­ГІГҐГ°ГўГ Г«Г®Гў ГЇГ® Гµ ГЁ Гі ГЁ ГЄГ®ГЅГґГґГЁГ¶ГЁГҐГ­ГІГ®Гў Г°Г Г§Г°ГїГ¤ГЄГЁ
 		for (int i = 0; i < xLines - 1; i++)
 		{
 			fscanf_s(fo, "%d", &tmp1);
@@ -178,21 +178,21 @@ namespace grid
 		fclose(fo);
 		nx = 0;
 		for (int i = 0; i < xLines - 1; i++)
-			//общее количество интервалов по х
+			//Г®ГЎГ№ГҐГҐ ГЄГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЁГ­ГІГҐГ°ГўГ Г«Г®Гў ГЇГ® Гµ
 			nx += xIntervals[i];
 		nx++;
 
 		ny = 0;
 		for (int j = 0; j < yLines - 1; j++)
-			//общее количество интервалов по у
+			//Г®ГЎГ№ГҐГҐ ГЄГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЁГ­ГІГҐГ°ГўГ Г«Г®Гў ГЇГ® Гі
 			ny += yIntervals[j];
 		ny++;
 
 		xi.reserve(nx); yj.reserve(ny);
 
-		//построение сеток по х и у
-		PartitionСoordinate(xi, areasLines.x, xCoefficient, xIntervals);
-		PartitionСoordinate(yj, areasLines.y, yCoefficient, yIntervals);
+		//ГЇГ®Г±ГІГ°Г®ГҐГ­ГЁГҐ Г±ГҐГІГ®ГЄ ГЇГ® Гµ ГЁ Гі
+		PartitionГ‘oordinate(xi, areasLines.x, xCoefficient, xIntervals);
+		PartitionГ‘oordinate(yj, areasLines.y, yCoefficient, yIntervals);
 
 		xIntervals.clear(); xCoefficient.clear();
 		yIntervals.clear(); yCoefficient.clear();
@@ -204,25 +204,25 @@ namespace grid
 		elements.reserve(nElements);
 		nodes.reserve(nNodes);
 
-		//заполняем список узлов
+		//Г§Г ГЇГ®Г«Г­ГїГҐГ¬ Г±ГЇГЁГ±Г®ГЄ ГіГ§Г«Г®Гў
 		for (int j = 0; j < yj.size(); j++)
 			for (int i = 0; i < xi.size(); i++)
 				PushNode(xi[i], yj[j]);
 	}
 
-	//Получение глобального номера
+	//ГЏГ®Г«ГіГ·ГҐГ­ГЁГҐ ГЈГ«Г®ГЎГ Г«ГјГ­Г®ГЈГ® Г­Г®Г¬ГҐГ°Г 
 	int Grid::GetGlobalNumber(int elementNumber, int localNumber)
 	{
-		//число интервалов по x
+		//Г·ГЁГ±Г«Г® ГЁГ­ГІГҐГ°ГўГ Г«Г®Гў ГЇГ® x
 		int nxint = nx - 1;
-		//номер горизонтальной линии, которая является нижним ребром элемента
+		//Г­Г®Г¬ГҐГ° ГЈГ®Г°ГЁГ§Г®Г­ГІГ Г«ГјГ­Г®Г© Г«ГЁГ­ГЁГЁ, ГЄГ®ГІГ®Г°Г Гї ГїГўГ«ГїГҐГІГ±Гї Г­ГЁГ¦Г­ГЁГ¬ Г°ГҐГЎГ°Г®Г¬ ГЅГ«ГҐГ¬ГҐГ­ГІГ 
 		int nGorLine = elementNumber / nxint;
-		//начальный номер узна на ребре
+		//Г­Г Г·Г Г«ГјГ­Г»Г© Г­Г®Г¬ГҐГ° ГіГ§Г­Г  Г­Г  Г°ГҐГЎГ°ГҐ
 		int nodeOnLine = nGorLine * (nxint + 1);
-		//отступ от начального узла, чтобы получить текущий номер
-		//левого нижнего узла элемента;
+		//Г®ГІГ±ГІГіГЇ Г®ГІ Г­Г Г·Г Г«ГјГ­Г®ГЈГ® ГіГ§Г«Г , Г·ГІГ®ГЎГ» ГЇГ®Г«ГіГ·ГЁГІГј ГІГҐГЄГіГ№ГЁГ© Г­Г®Г¬ГҐГ°
+		//Г«ГҐГўГ®ГЈГ® Г­ГЁГ¦Г­ГҐГЈГ® ГіГ§Г«Г  ГЅГ«ГҐГ¬ГҐГ­ГІГ ;
 		int offsetX = elementNumber % nxint;
-		//номер нижнего левого узла
+		//Г­Г®Г¬ГҐГ° Г­ГЁГ¦Г­ГҐГЈГ® Г«ГҐГўГ®ГЈГ® ГіГ§Г«Г 
 		int nodeElem = nodeOnLine + offsetX;
 
 
@@ -242,22 +242,22 @@ namespace grid
 
 	}
 
-	//Получение глобальных базисных номеров
+	//ГЏГ®Г«ГіГ·ГҐГ­ГЁГҐ ГЈГ«Г®ГЎГ Г«ГјГ­Г»Гµ ГЎГ Г§ГЁГ±Г­Г»Гµ Г­Г®Г¬ГҐГ°Г®Гў
 	int Grid::GetGlobalFuncNumber(int elNum, int localFuncNum)
 	{
-		//число интервалов по x
+		//Г·ГЁГ±Г«Г® ГЁГ­ГІГҐГ°ГўГ Г«Г®Гў ГЇГ® x
 		int nxint = nx - 1;
-		//номер горизонтальной линии, которая является нижним ребром элемента
+		//Г­Г®Г¬ГҐГ° ГЈГ®Г°ГЁГ§Г®Г­ГІГ Г«ГјГ­Г®Г© Г«ГЁГ­ГЁГЁ, ГЄГ®ГІГ®Г°Г Гї ГїГўГ«ГїГҐГІГ±Гї Г­ГЁГ¦Г­ГЁГ¬ Г°ГҐГЎГ°Г®Г¬ ГЅГ«ГҐГ¬ГҐГ­ГІГ 
 		int nGorLine = elNum / nxint;
-		//Количество узлов на одной горизонтальной линии
+		//ГЉГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГіГ§Г«Г®Гў Г­Г  Г®Г¤Г­Г®Г© ГЈГ®Г°ГЁГ§Г®Г­ГІГ Г«ГјГ­Г®Г© Г«ГЁГ­ГЁГЁ
 		int nGorNodes = 2 * nx - 1;
-		//отступ от начального узла, чтобы получить текущий номер
-		//левого нижнего узла элемента;
+		//Г®ГІГ±ГІГіГЇ Г®ГІ Г­Г Г·Г Г«ГјГ­Г®ГЈГ® ГіГ§Г«Г , Г·ГІГ®ГЎГ» ГЇГ®Г«ГіГ·ГЁГІГј ГІГҐГЄГіГ№ГЁГ© Г­Г®Г¬ГҐГ°
+		//Г«ГҐГўГ®ГЈГ® Г­ГЁГ¦Г­ГҐГЈГ® ГіГ§Г«Г  ГЅГ«ГҐГ¬ГҐГ­ГІГ ;
 		int offsetX = elNum % nxint;
 
-		//глобальный номер нижнего левого узла
+		//ГЈГ«Г®ГЎГ Г«ГјГ­Г»Г© Г­Г®Г¬ГҐГ° Г­ГЁГ¦Г­ГҐГЈГ® Г«ГҐГўГ®ГЈГ® ГіГ§Г«Г 
 		int res = 2 * nGorLine * nGorNodes + 2 * offsetX;
-		//в нумерации от единицы 1-3
+		//Гў Г­ГіГ¬ГҐГ°Г Г¶ГЁГЁ Г®ГІ ГҐГ¤ГЁГ­ГЁГ¶Г» 1-3
 		if (localFuncNum <= 2)
 			return res + localFuncNum;
 		else //... 4-6
@@ -267,7 +267,7 @@ namespace grid
 				return res + 2 * nGorNodes + (localFuncNum - 6);
 	}
 
-	//Нахождение номера области, в которой лежит заданная точка
+	//ГЌГ ГµГ®Г¦Г¤ГҐГ­ГЁГҐ Г­Г®Г¬ГҐГ°Г  Г®ГЎГ«Г Г±ГІГЁ, Гў ГЄГ®ГІГ®Г°Г®Г© Г«ГҐГ¦ГЁГІ Г§Г Г¤Г Г­Г­Г Гї ГІГ®Г·ГЄГ 
 	int Grid::FindArea(double x, double y)
 	{
 		bool xInterval, yInterval;
@@ -277,16 +277,16 @@ namespace grid
 			xInterval = x > areasLines.x[areas[i].leftX] && x < areasLines.x[areas[i].rightX];
 			yInterval = y > areasLines.y[areas[i].lowY] && y < areasLines.y[areas[i].upY];
 
-			//если точка попадает в iую область, возвращаем номер этой области
+			//ГҐГ±Г«ГЁ ГІГ®Г·ГЄГ  ГЇГ®ГЇГ Г¤Г ГҐГІ Гў iГіГѕ Г®ГЎГ«Г Г±ГІГј, ГўГ®Г§ГўГ°Г Г№Г ГҐГ¬ Г­Г®Г¬ГҐГ° ГЅГІГ®Г© Г®ГЎГ«Г Г±ГІГЁ
 			if (xInterval && yInterval) return i;
 		}
 	}
 
-	//Нахождение соседних конечных элементов
+	//ГЌГ ГµГ®Г¦Г¤ГҐГ­ГЁГҐ Г±Г®Г±ГҐГ¤Г­ГЁГµ ГЄГ®Г­ГҐГ·Г­Г»Гµ ГЅГ«ГҐГ¬ГҐГ­ГІГ®Гў
 	void Grid::FindNeighbors(int elementNumber)
 	{
 		int count = 0;
-		//количество конечных элементов
+		//ГЄГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЄГ®Г­ГҐГ·Г­Г»Гµ ГЅГ«ГҐГ¬ГҐГ­ГІГ®Гў
 		int nElements = elements.size();
 		Element element;
 		element = elements[elementNumber];
@@ -295,31 +295,30 @@ namespace grid
 
 		for (int i = 0; count < 4 && i < nElements; i++)
 		{
-			if (i == elementNumber) i++;
-			else 
+			if (i != elementNumber) 
 			{
-				//сосед по левому ребру
+				//Г±Г®Г±ГҐГ¤ ГЇГ® Г«ГҐГўГ®Г¬Гі Г°ГҐГЎГ°Гі
 				if (nodes[element.nodes[0]] == nodes[elements[i].nodes[1]] && nodes[element.nodes[2]] == nodes[elements[i].nodes[3]])
 				{
 					element.neighbors[0] = i;
 					tmp[0] = true;
 					count++;
 				}
-				//сосед по правому ребру
+				//Г±Г®Г±ГҐГ¤ ГЇГ® ГЇГ°Г ГўГ®Г¬Гі Г°ГҐГЎГ°Гі
 				if (nodes[element.nodes[1]] == nodes[elements[i].nodes[0]] && nodes[element.nodes[3]] == nodes[elements[i].nodes[2]])
 				{
 					element.neighbors[1] = i;
 					tmp[1] = true;
 					count++;
 				}
-				//сосед по нижнему ребру
+				//Г±Г®Г±ГҐГ¤ ГЇГ® Г­ГЁГ¦Г­ГҐГ¬Гі Г°ГҐГЎГ°Гі
 				if (nodes[element.nodes[0]] == nodes[elements[i].nodes[2]] && nodes[element.nodes[1]] == nodes[elements[i].nodes[3]])
 				{
 					element.neighbors[2] = i;
 					tmp[2] = true;
 					count++;
 				}
-				//сосед по верхнему ребру
+				//Г±Г®Г±ГҐГ¤ ГЇГ® ГўГҐГ°ГµГ­ГҐГ¬Гі Г°ГҐГЎГ°Гі
 				if (nodes[element.nodes[2]] == nodes[elements[i].nodes[0]] && nodes[element.nodes[3]] == nodes[elements[i].nodes[1]])
 				{
 					element.neighbors[3] = i;
@@ -330,20 +329,20 @@ namespace grid
 		}
 
 		for (int i = 0; i < 4; i++)
-			//отсутствие соседа на соответствующей стороне
+			//Г®ГІГ±ГіГІГ±ГІГўГЁГҐ Г±Г®Г±ГҐГ¤Г  Г­Г  Г±Г®Г®ГІГўГҐГІГ±ГІГўГіГѕГ№ГҐГ© Г±ГІГ®Г°Г®Г­ГҐ
 			if (tmp[i] == false) element.neighbors[i] = -1;
 
 		elements[elementNumber] = element;
 	}
 
-	//Вычисление конечных элементов
+	//Г‚Г»Г·ГЁГ±Г«ГҐГ­ГЁГҐ ГЄГ®Г­ГҐГ·Г­Г»Гµ ГЅГ«ГҐГ¬ГҐГ­ГІГ®Гў
 	void Grid::ComputeElements()
 	{
 		Element tmpEl;
 		double x, y;
 
-		//вычисляем глобальные номера узлов и базисных функций
-		//каждого кэ и заполняем список кэ
+		//ГўГ»Г·ГЁГ±Г«ГїГҐГ¬ ГЈГ«Г®ГЎГ Г«ГјГ­Г»ГҐ Г­Г®Г¬ГҐГ°Г  ГіГ§Г«Г®Гў ГЁ ГЎГ Г§ГЁГ±Г­Г»Гµ ГґГіГ­ГЄГ¶ГЁГ©
+		//ГЄГ Г¦Г¤Г®ГЈГ® ГЄГЅ ГЁ Г§Г ГЇГ®Г«Г­ГїГҐГ¬ Г±ГЇГЁГ±Г®ГЄ ГЄГЅ
 		for (int i = 0; i < elements.capacity(); i++)
 		{
 			for (int j = 0; j < 4; j++)
@@ -355,29 +354,29 @@ namespace grid
 			elements.push_back(tmpEl);
 		}
 
-		//находим номер подобласти для каждого кэ
+		//Г­Г ГµГ®Г¤ГЁГ¬ Г­Г®Г¬ГҐГ° ГЇГ®Г¤Г®ГЎГ«Г Г±ГІГЁ Г¤Г«Гї ГЄГ Г¦Г¤Г®ГЈГ® ГЄГЅ
 		for (int i = 0; i < elements.size(); i++)
 		{
 
-			//берём центральный узел
+			//ГЎГҐГ°ВёГ¬ Г¶ГҐГ­ГІГ°Г Г«ГјГ­Г»Г© ГіГ§ГҐГ«
 			x = (nodes[elements[i].nodes[0]].x + nodes[elements[i].nodes[1]].x) / 2;
 			y = (nodes[elements[i].nodes[0]].y + nodes[elements[i].nodes[2]].y) / 2;
 
 			elements[i].numberOfArea = FindArea(x, y);
 		}
 
-		//находим соседние кэ
+		//Г­Г ГµГ®Г¤ГЁГ¬ Г±Г®Г±ГҐГ¤Г­ГЁГҐ ГЄГЅ
 		for (int i = 0; i < elements.size(); i++)
 			FindNeighbors(i);
 	}
 
-	//Формирование массивов краевых условий
+	//Г”Г®Г°Г¬ГЁГ°Г®ГўГ Г­ГЁГҐ Г¬Г Г±Г±ГЁГўГ®Гў ГЄГ°Г ГҐГўГ»Гµ ГіГ±Г«Г®ГўГЁГ©
 	void Grid::FormKU()
 	{
 		int size = elements.size();
 		BoundaryCondition tmp;
 
-		//для каждого элемента находим,какие ку на его границах
+		//Г¤Г«Гї ГЄГ Г¦Г¤Г®ГЈГ® ГЅГ«ГҐГ¬ГҐГ­ГІГ  Г­Г ГµГ®Г¤ГЁГ¬,ГЄГ ГЄГЁГҐ ГЄГі Г­Г  ГҐГЈГ® ГЈГ°Г Г­ГЁГ¶Г Гµ
 		for (int i = 0; i < size; i++)
 		{
 			bool left[3] = { false, false, false }, right[3] = { false, false, false },
@@ -465,19 +464,19 @@ namespace grid
 		}
 	}
 
-	//Образование множества кэ
+	//ГЋГЎГ°Г Г§Г®ГўГ Г­ГЁГҐ Г¬Г­Г®Г¦ГҐГ±ГІГўГ  ГЄГЅ
 	void Grid::DoPartition()
 	{
-		//Построение сетки
+		//ГЏГ®Г±ГІГ°Г®ГҐГ­ГЁГҐ Г±ГҐГІГЄГЁ
 		BuildGrid();
-		//Вычисление конечных элементов
+		//Г‚Г»Г·ГЁГ±Г«ГҐГ­ГЁГҐ ГЄГ®Г­ГҐГ·Г­Г»Гµ ГЅГ«ГҐГ¬ГҐГ­ГІГ®Гў
 		ComputeElements();
-		//Формирование массивов краевых условий
+		//Г”Г®Г°Г¬ГЁГ°Г®ГўГ Г­ГЁГҐ Г¬Г Г±Г±ГЁГўГ®Гў ГЄГ°Г ГҐГўГ»Гµ ГіГ±Г«Г®ГўГЁГ©
 		FormKU();
 	}
 
-	//Формирование списка элементов, содержащих глобальный номер б.ф.
-	//равный dofsNumber
+	//Г”Г®Г°Г¬ГЁГ°Г®ГўГ Г­ГЁГҐ Г±ГЇГЁГ±ГЄГ  ГЅГ«ГҐГ¬ГҐГ­ГІГ®Гў, Г±Г®Г¤ГҐГ°Г¦Г Г№ГЁГµ ГЈГ«Г®ГЎГ Г«ГјГ­Г»Г© Г­Г®Г¬ГҐГ° ГЎ.Гґ.
+	//Г°Г ГўГ­Г»Г© dofsNumber
 	void Grid::SearchElements(int dofsNumber, vector <int> &elList)
 	{
 		int count;
